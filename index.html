@@ -94,12 +94,12 @@ async function sb(method,table,params,body){
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const VB=7512.03,VPCT=0.000333,MINP=1000,MAXP=3000,MAXE=1000;
 const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-const UNID_COR={GFI:"#1d4ed8",GFM:"#7c3aed",GCF:"#059669",GATIF:"#d97706",DT:"#dc2626",ADMIN:"#64748b"};
+const UNID_COR={GFI:"#1d4ed8",GFM:"#7c3aed",GCF:"#059669",GATIF:"#d97706",DAC:"#0891b2",GA:"#be185d",GAT:"#7c3aed",DT:"#dc2626",ADMIN:"#64748b"};
 const ROLE_LBL={admin:"Admin",diretor:"Diretor",gerente:"Gerente",encarregado:"Encarregado",colaborador:"Auditor"};
 const ROLE_ORD={admin:0,diretor:1,gerente:2,encarregado:3,colaborador:4};
 const SCOR={pend:"#f59e0b",ap_enc:"#3b82f6",ap_ger:"#10b981",rej:"#ef4444"};
 const SLBL={pend:"Aguard. Encarregado",ap_enc:"Aguard. Gerente",ap_ger:"Aprovado ✓",rej:"Rejeitado"};
-const UNIDS=["GFI","GFM","GCF","GATIF","DT","ADMIN"];
+const UNIDS=["GFI","GFM","GCF","GATIF","DAC","GA","GAT","DT","ADMIN"];
 
 // Itens com campo de quantidade extra (além do qtd normal)
 const COM_QTD=["c31","c41","c42","c44","c45","c49","c50"];
@@ -561,6 +561,15 @@ function MapaGer({users,comp,getR,mediaAptos,myCols}){
       ),
       h("div",{style:{padding:"8px 12px",background:"#dcfce7",fontWeight:900,fontSize:13}},
         "TOTAL GERAL GPFI (Auditores + Gestores): ",h("span",{style:{color:"#059669",fontSize:15}},fmtBRL(tT))
+      ),
+      // #1 — assinaturas: gerentes + diretor + secretário
+      h("div",{style:{padding:"10px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"ASSINATURAS DOS GERENTES"),
+        h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16,marginTop:12}},
+          gest.filter(g=>g.role==="gerente").map(g=>h("div",{key:g.id,style:{textAlign:"center"}},
+            h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},g.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+g.mat+" — "+g.cargo))
+          ))
+        )
       ),
       h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"20px 12px",gap:20}},
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Diretor do Departamento de Tributação")),
