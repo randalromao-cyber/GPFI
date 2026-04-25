@@ -1,15 +1,742 @@
--- Adicionar coluna de superior hierárquico
-alter table usuarios add column if not exists sup_id text references usuarios(id);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GPFI — Prefeitura de Santo André</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#dde6f0}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#0d1b2a}::-webkit-scrollbar-thumb{background:#243448;border-radius:3px}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.hdr{height:56px;background:#111f30;border-bottom:1px solid #1e3148;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100}
+.hdr-title{font-weight:900;font-size:14px;color:#7eb8f7}.hdr-sub{font-size:10px;color:#3a5168}
+.layout{display:flex;flex:1;min-height:0}
+.sbar{width:190px;background:#0f1e2e;border-right:1px solid #1a2e42;flex-shrink:0;display:flex;flex-direction:column;padding:8px 0}
+.sbar-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;cursor:pointer;font-size:12px;text-align:left;background:transparent;color:#4a6580;border-left:3px solid transparent;transition:all .15s}
+.sbar-btn.active{background:#1d4ed815;color:#7eb8f7;border-left:3px solid #2563eb;font-weight:700}
+.sbar-btn:hover:not(.active){color:#94a3b8;background:#ffffff08}
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#111f30;border-top:1px solid #1e3148;z-index:100;overflow-x:auto;white-space:nowrap}
+.bnav-btn{display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:8px 12px;border:none;background:transparent;color:#4a6580;font-size:10px;cursor:pointer;min-width:60px}
+.bnav-btn.active{color:#7eb8f7}.bnav-btn span{font-size:18px}
+.main{flex:1;padding:16px;overflow-y:auto;max-height:calc(100vh - 56px)}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.kcard{background:#162234;border-radius:10px;padding:14px;border:1px solid #1e3148}
+.card{background:#162234;border-radius:10px;border:1px solid #1e3148;overflow:hidden;margin-bottom:12px}
+.card-head{padding:10px 14px;background:#0f1e2e;border-bottom:1px solid #1e3148;font-weight:700;color:#7eb8f7;font-size:13px}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:8px 10px;text-align:left;color:#4a6580;font-weight:700;font-size:11px;background:#1a2e42;white-space:nowrap}
+td{padding:8px 10px;color:#b8c8d8;vertical-align:middle;border-bottom:1px solid #0f1e2e}
+.field{margin-bottom:10px}
+label.lbl{font-size:11px;color:#4a6580;font-weight:700;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:7px;background:#0d1b2a;border:1px solid #1e3148;color:#dde6f0;font-size:13px;outline:none}
+textarea{resize:vertical;min-height:52px}
+.btn{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer}
+.btns{padding:9px 16px;border-radius:7px;background:#1e3148;color:#7eb8f7;font-weight:700;font-size:13px;border:none;cursor:pointer}
+.btnd{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.notif{position:fixed;top:14px;right:14px;z-index:9999;padding:10px 18px;border-radius:8px;color:#fff;font-weight:700;font-size:13px;box-shadow:0 4px 20px #0009;max-width:calc(100vw - 28px)}
+h2.ph{color:#7eb8f7;font-weight:900;font-size:17px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.spinner{width:36px;height:36px;border:3px solid #1e3148;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mapa{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:12px}
+.mapa table{font-size:11px;width:100%;border-collapse:collapse}
+.mapa th,.mapa td{border:1px solid #aaa;padding:4px 7px}
+.mapa th{background:#dce6f1}
+.load-screen{min-height:100vh;background:#0d1b2a;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.login-screen{min-height:100vh;background:linear-gradient(135deg,#0d1b2a,#162e45);display:flex;align-items:center;justify-content:center;padding:16px}
+.hier-tree{padding:8px 0}
+.hier-node{padding:4px 0 4px 20px;border-left:2px solid #1e3148;margin-left:8px}
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff;color:#000}
+  .mapa-wrap{margin:0;padding:0}
+}
+@media(max-width:640px){
+  .sbar{display:none}.bnav{display:block}
+  .main{padding:12px 10px;padding-bottom:80px}
+  .g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}
+  h2.ph{font-size:15px}
+  .btn,.btns,.btnd{font-size:12px;padding:8px 12px}
+  table{font-size:11px}th,td{padding:6px 8px}
+}
+@media(max-width:400px){.kgrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {createElement:h,useState,useEffect,useCallback,Fragment} = React;
 
--- Definir superiores iniciais
--- Encarregados → Gerentes
-update usuarios set sup_id = (select id from usuarios where role='gerente' and unid='GFI' limit 1) where role='encarregado' and unid='GFI';
-update usuarios set sup_id = (select id from usuarios where role='gerente' and unid='GFM' limit 1) where role='encarregado' and unid='GFM';
-update usuarios set sup_id = (select id from usuarios where role='gerente' and unid='GCF' limit 1) where role='encarregado' and unid='GCF';
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SB_URL="https://laelsnqvajpbhmaeshoa.supabase.co/rest/v1";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhZWxzbnF2YWpwYmhtYWVzaG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MDI0OTQsImV4cCI6MjA5MjM3ODQ5NH0.voyevlz2pywjM9pZFpj_AgwJhrsGSNTg4092GfBHn4o";
+const HDR={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Accept":"application/json"};
 
--- Colaboradores → Encarregados
-update usuarios set sup_id = (select id from usuarios where role='encarregado' and unid='GFI' limit 1) where role='colaborador' and unid='GFI';
-update usuarios set sup_id = (select id from usuarios where role='encarregado' and unid='GFM' limit 1) where role='colaborador' and unid='GFM';
-update usuarios set sup_id = (select id from usuarios where role='encarregado' and unid='GCF' limit 1) where role='colaborador' and unid='GCF';
+async function sb(method,table,params,body){
+  const url=SB_URL+"/"+table+(params?"?"+params:"");
+  const hh={...HDR};
+  if(method==="POST"||method==="PATCH")hh["Prefer"]="return=representation";
+  if(method==="POST"&&params&&params.includes("on_conflict"))hh["Prefer"]="resolution=merge-duplicates,return=representation";
+  const r=await fetch(url,{method,headers:hh,...(body?{body:JSON.stringify(body)}:{})});
+  if(!r.ok){const t=await r.text();throw new Error(r.status+": "+t);}
+  if(method==="DELETE")return[];
+  const txt=await r.text();
+  return txt?JSON.parse(txt):[];
+}
 
-select id, nome, role, unid, sup_id from usuarios order by role, unid;
+// ── CONSTANTES ────────────────────────────────────────────────────────────────
+const VB=7512.03,VPCT=0.000333,MINP=1000,MAXP=3000,MAXE=1000;
+const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const UNID_COR={GFI:"#1d4ed8",GFM:"#7c3aed",GCF:"#059669",GATIF:"#d97706",DT:"#dc2626",ADMIN:"#64748b"};
+const ROLE_LBL={admin:"Admin",diretor:"Diretor",gerente:"Gerente",encarregado:"Encarregado",colaborador:"Auditor"};
+const ROLE_ORD={admin:0,diretor:1,gerente:2,encarregado:3,colaborador:4};
+const SCOR={pend:"#f59e0b",ap_enc:"#3b82f6",ap_ger:"#10b981",rej:"#ef4444"};
+const SLBL={pend:"Aguard. Encarregado",ap_enc:"Aguard. Gerente",ap_ger:"Aprovado ✓",rej:"Rejeitado"};
+const UNIDS=["GFI","GFM","GCF","GATIF","DT","ADMIN"];
+
+// Itens com campo de quantidade extra (além do qtd normal)
+const COM_QTD=["c31","c41","c42","c44","c45","c49","c50"];
+
+const CAT=[
+  {id:"c01",item:"1",   pts:300,desc:"Informações tributárias – mandado de segurança / ações judiciais"},
+  {id:"c02",item:"2.1", pts:120,desc:"Serviço fiscal básico – 1 exercício"},
+  {id:"c03",item:"2.2", pts:140,desc:"Serviço fiscal básico – 2 exercícios"},
+  {id:"c04",item:"2.3", pts:170,desc:"Serviço fiscal básico – 3 exercícios"},
+  {id:"c05",item:"2.4", pts:200,desc:"Serviço fiscal básico – 4+ exercícios"},
+  {id:"c06",item:"3.1", pts:10, desc:"Verificação – livros contábeis (por exercício)"},
+  {id:"c07",item:"3.2", pts:20, desc:"Verificação – relatórios em geral"},
+  {id:"c08",item:"3.3", pts:2,  desc:"Verificação – memorandos"},
+  {id:"c09",item:"3.4", pts:5,  desc:"Verificação – contratos"},
+  {id:"c10",item:"4.1", pts:130,desc:"Arbitramento – não atendimento / notificação"},
+  {id:"c11",item:"4.2", pts:145,desc:"Arbitramento – documentos sem condição de conclusão"},
+  {id:"c12",item:"4.3", pts:150,desc:"Cálculo por estimativa"},
+  {id:"c13",item:"5",   pts:20, desc:"Diligências por contribuinte"},
+  {id:"c14",item:"6.1", pts:10, desc:"Autorização – inscrição/alteração/cancelamento"},
+  {id:"c15",item:"6.2", pts:10, desc:"Autorização – enquadramento de atividade"},
+  {id:"c16",item:"7.1", pts:20, desc:"Notificação / intimação"},
+  {id:"c17",item:"7.2", pts:20, desc:"Termo de apreensão"},
+  {id:"c18",item:"7.3", pts:20, desc:"Auto de infração"},
+  {id:"c19",item:"8.1", pts:200,desc:"Manifestação definitiva – pesquisa doutrina/jurisprudência"},
+  {id:"c20",item:"8.2", pts:100,desc:"Manifestação definitiva – fundamentação legal"},
+  {id:"c21",item:"9.1", pts:250,desc:"Informações fundamentadas – consulta jurídico-tributária"},
+  {id:"c22",item:"9.2", pts:100,desc:"Informações fundamentadas – imunidade/isenção"},
+  {id:"c23",item:"9.3", pts:60, desc:"Informações fundamentadas – Regime Especial"},
+  {id:"c24",item:"9.4", pts:20, desc:"Pontuação adicional – defesa/recurso"},
+  {id:"c25",item:"10.1",pts:150,desc:"Fiscalização especial – diurna (jornada integral)"},
+  {id:"c26",item:"10.2",pts:75, desc:"Fiscalização especial – período parcial"},
+  {id:"c27",item:"10.3",pts:195,desc:"Fiscalização especial – noturna"},
+  {id:"c28",item:"10.4",pts:300,desc:"Fiscalização – feriados ou finais de semana"},
+  {id:"c29",item:"11.1",pts:150,desc:"Conferência DIPAM – jornada integral"},
+  {id:"c30",item:"11.2",pts:75, desc:"Conferência DIPAM – período parcial"},
+  {id:"c31",item:"12.1",pts:20, desc:"Emissão/cancelamento – Demonstrativo de Recolhimento"},
+  {id:"c32",item:"13.1",pts:50, desc:"Verificação subempreitada – construção civil"},
+  {id:"c33",item:"13.2",pts:15, desc:"Levantamento fiscal – mão-de-obra própria"},
+  {id:"c34",item:"14",  pts:75, desc:"Comissões / grupos de trabalho – sem prejuízo"},
+  {id:"c35",item:"15",  pts:150,desc:"Comissões / grupos de trabalho – com prejuízo"},
+  {id:"c36",item:"16.1",pts:150,desc:"Plantão fiscal – jornada integral"},
+  {id:"c37",item:"16.2",pts:75, desc:"Plantão fiscal – período parcial"},
+  {id:"c38",item:"17",  pts:300,desc:"Elaboração de parecer técnico-científico"},
+  {id:"c39",item:"18",  pts:50, desc:"Monitoramento tomadores/prestadores"},
+  {id:"c40",item:"19",  pts:20, desc:"Inclusão/alteração/exclusão cadastral"},
+  {id:"c41",item:"20.1",pts:20, desc:"Vistoria – dados proprietário (por UA)"},
+  {id:"c42",item:"20.2",pts:30, desc:"Vistoria – Tipo/Padrão Construtivo (por UA)"},
+  {id:"c43",item:"20.3",pts:15, desc:"Vistoria – Área Construída (por m²)",esp:"m2"},
+  {id:"c44",item:"21.1",pts:20, desc:"Vistoria p/ processo – dados proprietário (por UA)"},
+  {id:"c45",item:"21.2",pts:30, desc:"Vistoria p/ processo – Tipo/Padrão (por UA)"},
+  {id:"c46",item:"21.3",pts:15, desc:"Vistoria p/ processo – Área Construída (por m²)",esp:"m2"},
+  {id:"c47",item:"21.4",pts:25, desc:"Vistoria p/ processo – confirmação de dados (por UA)"},
+  {id:"c48",item:"22.1",pts:20, desc:"Despacho/ficha – Cadastro Imobiliário Fiscal"},
+  {id:"c49",item:"22.2",pts:20, desc:"Desdobro/Englobamento – criação das unidades"},
+  {id:"c50",item:"22.3",pts:40, desc:"Desdobro/Englobamento – dados avaliativos"},
+  {id:"c51",item:"22.4",pts:40, desc:"Identificação sujeito passivo IPTU"},
+  {id:"c52",item:"23.1",pts:1,  desc:"Notificação ISSCC – a cada 50 FMPs lançados",esp:"fmp"},
+  {id:"c53",item:"24",  pts:10, desc:"Ficha de Lançamento / sistemas informatizados"},
+  {id:"c54",item:"25",  pts:150,desc:"Pesquisa de Valores Imobiliários (por UA)"},
+];
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function getComp(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function fmtComp(c){const[y,m]=c.split("-");return MESES[+m-1]+"/"+y;}
+function fmtBRL(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
+
+function calcPts(cid,f){
+  const c=CAT.find(x=>x.id===cid);if(!c)return 0;
+  if(c.esp==="m2"){const d=(parseFloat(f.m2b)||0)-(parseFloat(f.m2a)||0);return d>0?Math.round(d*c.pts):0;}
+  if(c.esp==="fmp"){const t=parseFloat(f.ft)||0,v=parseFloat(f.fv)||0;return v?Math.floor((t/v)/50)*c.pts:0;}
+  // itens com quantidade
+  return c.pts*(parseInt(f.qtd)||1);
+}
+
+function calcRes(base,exc){
+  const total=base+exc;
+  if(total<MINP)return{total,ef:0,exc:0};
+  return{total,ef:Math.min(total,MAXP),exc:Math.min(Math.max(total-MAXP,0),MAXE)};
+}
+function gpfi(ef,vb){return ef*vb*VPCT;}
+function toUser(r){return{id:r.id,nome:r.nome,mat:r.mat,email:r.email,cargo:r.cargo,role:r.role,unid:r.unid,vb:parseFloat(r.vb),pw:r.pw,ativo:r.ativo,sup_id:r.sup_id||null};}
+function toTrf(r){return{id:r.id,uid:r.user_id,comp:r.comp,cid:r.cat_id,desc:r.descricao,pts:r.pts,qtd:r.qtd,data:r.data,obs:r.obs,status:r.status,m2a:r.m2_atual,m2b:r.m2_nova,ft:r.fmp_tot,fv:r.fmp_val};}
+
+function genId(){return "u_"+Math.random().toString(36).slice(2,8);}
+
+// ── MINI COMPONENTS ───────────────────────────────────────────────────────────
+function Bdg({lbl,cor}){return h("span",{className:"badge",style:{background:cor+"25",color:cor}},lbl);}
+function KCard({icon,lbl,val,cor,sub}){return h("div",{className:"kcard",style:{borderColor:cor+"40"}},h("div",{style:{fontSize:20,marginBottom:4}},icon),h("div",{style:{fontSize:19,fontWeight:900,color:cor}},val),h("div",{style:{fontSize:11,color:"#4a6580",marginTop:2}},lbl),sub&&h("div",{style:{fontSize:10,color:"#3a5168"}},sub));}
+function Notif({n}){return n?h("div",{className:"notif",style:{background:n.t==="ok"?"#064e3b":"#7f1d1d"}},n.m):null;}
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App(){
+  const[users, setU]=useState([]);
+  const[trfs,  setT]=useState([]);
+  const[exc,   setE]=useState({});
+  const[comps, setC]=useState({});
+  const[comp,  setComp]=useState(getComp());
+  const[user,  setUser]=useState(null);
+  const[tab,   setTab]=useState("dash");
+  const[lf,    setLF]=useState({email:"",pw:""});
+  const[le,    setLE]=useState("");
+  const[load,  setLoad]=useState(true);
+  const[lmsg,  setLmsg]=useState("Conectando...");
+  const[notif, setN]=useState(null);
+
+  const notify=(m,t="ok")=>{setN({m,t});setTimeout(()=>setN(null),3000);};
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        setLmsg("Carregando usuários...");
+        const us=await sb("GET","usuarios","order=nome");
+        if(Array.isArray(us))setU(us.map(toUser));
+        setLmsg("Carregando tarefas...");
+        const ts=await sb("GET","tarefas","order=criado_em.desc");
+        if(Array.isArray(ts))setT(ts.map(toTrf));
+        setLmsg("Carregando configurações...");
+        const[exs,cfg,cps]=await Promise.all([sb("GET","excedentes"),sb("GET","config","chave=eq.comp_ativa"),sb("GET","competencias")]);
+        if(Array.isArray(exs)){const em={};exs.forEach(e=>{em[e.user_id+"_"+e.comp]=e.valor;});setE(em);}
+        if(Array.isArray(cfg)&&cfg.length)setComp(cfg[0].valor);
+        if(Array.isArray(cps)){const cm={};cps.forEach(c=>{if(!cm[c.comp])cm[c.comp]={};cm[c.comp][c.user_id]={ef:c.efetivos,exc:c.excedente,total:c.total};});setC(cm);}
+      }catch(e){alert("Erro ao conectar: "+e.message);}
+      setLoad(false);
+    })();
+  },[]);
+
+  const getBase=useCallback((uid,c)=>trfs.filter(t=>t.uid===uid&&t.comp===c&&t.status==="ap_ger").reduce((s,t)=>s+t.pts,0),[trfs]);
+  const getExc =useCallback((uid,c)=>exc[uid+"_"+c]||0,[exc]);
+  const getR   =useCallback((uid,c)=>calcRes(getBase(uid,c),getExc(uid,c)),[getBase,getExc]);
+  const cols   =useCallback(()=>users.filter(u=>u.role==="colaborador"&&u.ativo),[users]);
+
+  // #5 — média apenas dos aptos
+  const mediaAptos=useCallback((c)=>{
+    const aptos=cols().filter(u=>getR(u.id,c).ef>=MINP);
+    if(!aptos.length)return 0;
+    return Math.round(aptos.reduce((s,u)=>s+getR(u.id,c).ef,0)/aptos.length);
+  },[cols,getR]);
+
+  const myCols=useCallback(()=>{
+    if(!user)return[];
+    if(user.role==="admin"||user.role==="diretor")return cols();
+    if(user.role==="gerente"||user.role==="encarregado")return users.filter(u=>u.role==="colaborador"&&u.unid===user.unid&&u.ativo);
+    return[];
+  },[user,users,cols]);
+
+  const pends=useCallback(()=>{
+    if(!user)return[];
+    if(user.role==="encarregado")return trfs.filter(t=>{const u=users.find(x=>x.id===t.uid);return u&&u.unid===user.unid&&t.status==="pend";});
+    if(user.role==="gerente")    return trfs.filter(t=>{const u=users.find(x=>x.id===t.uid);return u&&u.unid===user.unid&&t.status==="ap_enc";});
+    return[];
+  },[user,trfs,users]);
+
+  function doLogin(){
+    const u=users.find(x=>x.email.toLowerCase()===lf.email.toLowerCase());
+    if(!u){setLE("Usuário não encontrado.");return;}
+    if(lf.pw!==u.pw){setLE("Senha incorreta.");return;}
+    setUser(u);setLE("");setTab("dash");
+  }
+
+  if(load)return h("div",{className:"load-screen"},h("div",{className:"spinner",style:{width:48,height:48}}),h("span",{style:{color:"#4a6580",fontSize:14}},lmsg),h("span",{style:{color:"#3a5168",fontSize:11}},"Aguarde..."));
+
+  // #7 — tela de login sem senha padrão
+  if(!user)return h("div",{className:"login-screen"},
+    h("div",{style:{width:"100%",maxWidth:420,textAlign:"center"}},
+      h("div",{style:{marginBottom:20}},h("div",{style:{fontSize:44}},"🏛️"),h("div",{style:{fontSize:22,fontWeight:900,color:"#7eb8f7",letterSpacing:2}},"GPFI"),h("div",{style:{fontSize:11,color:"#4a6580",marginTop:4}},"Prefeitura de Santo André — Gratificação de Desempenho")),
+      h("div",{style:{background:"#162234",borderRadius:14,padding:24,border:"1px solid #243448"}},
+        h("div",{className:"field"},h("label",{className:"lbl"},"USUÁRIO"),h("select",{value:lf.email,onChange:e=>setLF(f=>({...f,email:e.target.value}))},h("option",{value:""},"Selecione..."),users.map(u=>h("option",{key:u.id,value:u.email},u.nome+" — "+u.cargo)))),
+        h("div",{className:"field"},h("label",{className:"lbl"},"SENHA"),h("input",{type:"password",placeholder:"Senha",value:lf.pw,onChange:e=>setLF(f=>({...f,pw:e.target.value})),onKeyDown:e=>e.key==="Enter"&&doLogin()})),
+        le&&h("div",{style:{color:"#f87171",fontSize:12,marginBottom:10}},le),
+        h("button",{className:"btn",style:{width:"100%",padding:11},onClick:doLogin},"Entrar")
+      )
+    )
+  );
+
+  const np=pends().length;
+  const isAdmin=user.role==="admin"||user.role==="diretor"; // #2
+  const NAV=[
+    {id:"dash",icon:"📊",lbl:"Dashboard", roles:["admin","diretor","gerente","encarregado","colaborador"]},
+    {id:"trf", icon:"✅",lbl:"Tarefas",    roles:["colaborador"]},
+    {id:"val", icon:"🔍",lbl:"Val."+(np>0?" ("+np+")":""), roles:["encarregado","gerente"]},
+    {id:"mi",  icon:"📋",lbl:"Mapa Ind.",  roles:["admin","diretor","gerente","encarregado","colaborador"]},
+    {id:"mg",  icon:"📑",lbl:"Mapa Geral", roles:["admin","diretor","gerente","encarregado"]},
+    {id:"rel", icon:"📈",lbl:"Relatórios", roles:["admin","diretor","gerente","encarregado"]},
+    {id:"usr", icon:"👥",lbl:"Usuários",   roles:["admin","diretor"]}, // #2
+    {id:"cmp", icon:"📅",lbl:"Competência",roles:["admin","diretor"]}, // #2
+  ].filter(n=>n.roles.includes(user.role));
+
+  const P={user,users,setU,trfs,setT,comp,setComp,comps,setC,exc,setE,getR,getExc,mediaAptos,myCols,pends,cols,notify,isAdmin};
+
+  return h("div",{className:"app"},
+    h(Notif,{n:notif}),
+    h("header",{className:"hdr"},
+      h("div",{style:{display:"flex",alignItems:"center",gap:10}},h("span",{style:{fontSize:20}},"🏛️"),h("div",null,h("div",{className:"hdr-title"},"GPFI — Gratificação"),h("div",{className:"hdr-sub"},"Santo André • "+fmtComp(comp)))),
+      h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+        h("span",{style:{fontSize:12,color:"#4a6580",display:"none"}}),
+        h("button",{className:"btns",style:{fontSize:12,padding:"6px 12px"},onClick:()=>{setUser(null);setLF({email:"",pw:""});}},"Sair")
+      )
+    ),
+    h("div",{className:"layout"},
+      h("aside",{className:"sbar"},NAV.map(n=>h("button",{key:n.id,className:"sbar-btn"+(tab===n.id?" active":""),onClick:()=>setTab(n.id)},h("span",null,n.icon),n.lbl))),
+      h("main",{className:"main"},
+        tab==="dash"&&h(Dash,P),
+        tab==="trf" &&user.role==="colaborador"&&h(Trfs,P),
+        tab==="val" &&(user.role==="encarregado"||user.role==="gerente")&&h(Val,P),
+        tab==="mi"  &&h(MapaInd,P),
+        tab==="mg"  &&h(MapaGer,P),
+        tab==="rel" &&h(Rel,P),
+        tab==="usr" &&isAdmin&&h(Usr,P),
+        tab==="cmp" &&isAdmin&&h(Comp,P),
+      )
+    ),
+    h("nav",{className:"bnav"},NAV.map(n=>h("button",{key:n.id,className:"bnav-btn"+(tab===n.id?" active":""),onClick:()=>setTab(n.id)},h("span",null,n.icon),n.lbl)))
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dash({user,comp,getR,mediaAptos,myCols}){
+  const cs=myCols(),mef=mediaAptos(comp);
+  if(user.role==="colaborador"){
+    const r=getR(user.id,comp),g=gpfi(r.ef,user.vb);
+    return h("div",null,h("h2",{className:"ph"},"Meu Painel — "+fmtComp(comp)),
+      h("div",{className:"kgrid"},h(KCard,{icon:"🎯",lbl:"Pontos Produzidos",val:r.total,cor:"#3b82f6"}),h(KCard,{icon:"✅",lbl:"Pt. Efetivos",val:r.ef,cor:"#10b981",sub:"Mín "+MINP+" / Máx "+MAXP}),h(KCard,{icon:"➡️",lbl:"Excedente",val:r.exc,cor:"#f59e0b"}),h(KCard,{icon:"💰",lbl:"GPFI Estimado",val:fmtBRL(g),cor:"#a78bfa"})),
+      h("div",{className:"card",style:{padding:14,color:r.ef>=MINP?"#6ee7b7":"#fcd34d",fontWeight:700}},r.ef>=MINP?"✅ GPFI habilitado":"⚠️ Faltam "+(MINP-r.total)+" pontos")
+    );
+  }
+  const aptos=cs.filter(u=>getR(u.id,comp).ef>=MINP).length;
+  return h("div",null,h("h2",{className:"ph"},"Dashboard — "+fmtComp(comp)),
+    h("div",{className:"kgrid"},h(KCard,{icon:"👥",lbl:"Colaboradores",val:cs.length,cor:"#3b82f6"}),h(KCard,{icon:"✅",lbl:"Aptos",val:aptos+"/"+cs.length,cor:"#10b981"}),h(KCard,{icon:"📈",lbl:"Média Aptos",val:mef,cor:"#7eb8f7"}),h(KCard,{icon:"💰",lbl:"GPFI/Média",val:fmtBRL(gpfi(mef,VB)),cor:"#a78bfa"})),
+    h("div",{className:"card"},h("div",{className:"card-head"},"Equipe — "+fmtComp(comp)),
+      h("div",{className:"tbl-wrap"},h("table",null,h("thead",null,h("tr",null,["Auditor","I.F.","Unid.","Pt.Ef.","Exc.","GPFI","Status"].map(x=>h("th",{key:x},x)))),
+        h("tbody",null,cs.map(u=>{const r=getR(u.id,comp);return h("tr",{key:u.id},
+          h("td",{style:{fontWeight:700,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},u.nome),
+          h("td",null,u.mat),h("td",null,h(Bdg,{lbl:u.unid,cor:UNID_COR[u.unid]||"#555"})),
+          h("td",{style:{fontWeight:700,color:r.ef>=MINP?"#6ee7b7":"#fcd34d"}},r.ef),
+          h("td",null,r.exc),h("td",{style:{whiteSpace:"nowrap"}},fmtBRL(gpfi(r.ef,u.vb))),
+          h("td",null,h(Bdg,{lbl:r.ef>=MINP?"Apto":"Abaixo",cor:r.ef>=MINP?"#10b981":"#f59e0b"}))
+        );}))
+      ))
+    )
+  );
+}
+
+// ── TAREFAS ───────────────────────────────────────────────────────────────────
+function Trfs({user,trfs,setT,comp,notify}){
+  const F0={cid:"",qtd:"1",data:new Date().toISOString().slice(0,10),obs:"",m2a:"",m2b:"",ft:"",fv:""};
+  const[show,setShow]=useState(false);
+  const[form,setForm]=useState(F0);
+  const[sav,setSav]=useState(false);
+  const cat=CAT.find(c=>c.id===form.cid);
+  const pts=cat?calcPts(form.cid,form):0;
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const mine=trfs.filter(t=>t.uid===user.id&&t.comp===comp);
+  const temQtd=cat&&(COM_QTD.includes(cat.id)||(!cat.esp));
+
+  async function add(){
+    if(!form.cid){notify("Selecione um item.","err");return;}
+    if(pts<=0){notify("Pontuação zero.","err");return;}
+    setSav(true);
+    try{
+      const row={id:"t"+Date.now(),user_id:user.id,comp,cat_id:form.cid,descricao:cat.item+" – "+cat.desc,pts,qtd:parseInt(form.qtd)||1,data:form.data,obs:form.obs||null,status:"pend",m2_atual:form.m2a||null,m2_nova:form.m2b||null,fmp_tot:form.ft||null,fmp_val:form.fv||null};
+      const saved=await sb("POST","tarefas","",row);
+      const t=Array.isArray(saved)?saved[0]:saved;
+      setT(p=>[toTrf(t),...p]);setForm(F0);setShow(false);notify("Tarefa registrada!");
+    }catch(e){notify("Erro: "+e.message,"err");}
+    setSav(false);
+  }
+  async function del(id){
+    if(trfs.find(t=>t.id===id)?.status!=="pend"){notify("Só pendentes podem ser removidas.","err");return;}
+    try{await sb("DELETE","tarefas","id=eq."+id);setT(p=>p.filter(t=>t.id!==id));}
+    catch{notify("Erro ao remover.","err");}
+  }
+
+  return h("div",null,
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}},h("h2",{className:"ph",style:{margin:0}},"Minhas Tarefas"),h("button",{className:"btn",onClick:()=>setShow(!show)},"+ Registrar")),
+    show&&h("div",{className:"card",style:{marginBottom:14}},h("div",{className:"card-head"},"Nova Tarefa"),
+      h("div",{style:{padding:14}},
+        h("div",{className:"field"},h("label",{className:"lbl"},"Item do Catálogo"),h("select",{style:{fontSize:12},value:form.cid,onChange:e=>setForm({...F0,cid:e.target.value})},h("option",{value:""},"Selecione..."),CAT.map(c=>h("option",{key:c.id,value:c.id},"Item "+c.item+" — "+c.desc+" ("+c.pts+" pts)")))),
+        // #8 — quantidade para itens específicos e itens normais
+        temQtd&&h("div",{className:"field"},h("label",{className:"lbl"},"Quantidade"),h("input",{type:"number",min:"1",value:form.qtd,onChange:e=>sf("qtd",e.target.value)})),
+        cat&&cat.esp==="m2"&&h("div",{className:"g2"},h("div",{className:"field"},h("label",{className:"lbl"},"Área Atual (m²)"),h("input",{type:"number",step:"0.01",value:form.m2a,onChange:e=>sf("m2a",e.target.value)})),h("div",{className:"field"},h("label",{className:"lbl"},"Área Nova (m²)"),h("input",{type:"number",step:"0.01",value:form.m2b,onChange:e=>sf("m2b",e.target.value)}))),
+        // #9 — "Total em R$" para item 23.1
+        cat&&cat.esp==="fmp"&&h("div",{className:"g2"},h("div",{className:"field"},h("label",{className:"lbl"},"Total em R$"),h("input",{type:"number",step:"0.01",value:form.ft,onChange:e=>sf("ft",e.target.value)})),h("div",{className:"field"},h("label",{className:"lbl"},"Valor do FMP (R$)"),h("input",{type:"number",step:"0.01",value:form.fv,onChange:e=>sf("fv",e.target.value)}))),
+        cat&&h(Fragment,null,
+          h("div",{className:"field"},h("label",{className:"lbl"},"Data"),h("input",{type:"date",value:form.data,onChange:e=>sf("data",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Observação"),h("textarea",{value:form.obs,onChange:e=>sf("obs",e.target.value)})),
+          h("div",{style:{padding:"8px 10px",background:"#0d1b2a",borderRadius:7,display:"flex",justifyContent:"space-between",marginBottom:10}},h("span",{style:{color:"#4a6580",fontSize:12}},"Item "+cat.item),h("span",{style:{color:"#6ee7b7",fontWeight:900}},"Total: "+pts+" pts"))
+        ),
+        h("div",{className:"btn-row"},h("button",{className:"btn",onClick:add,disabled:sav},sav?"Salvando...":"Salvar"),h("button",{className:"btns",onClick:()=>{setShow(false);setForm(F0);}},"Cancelar"))
+      )
+    ),
+    h("div",{className:"card"},h("div",{className:"tbl-wrap"},h("table",null,
+      h("thead",null,h("tr",null,["Data","Item","Pts","Status",""].map(x=>h("th",{key:x},x)))),
+      h("tbody",null,
+        mine.length===0&&h("tr",null,h("td",{colSpan:5,style:{textAlign:"center",color:"#3a5168",padding:16}},"Nenhuma tarefa.")),
+        mine.map(t=>h("tr",{key:t.id},h("td",{style:{whiteSpace:"nowrap"}},t.data),h("td",{style:{fontWeight:700,color:"#7eb8f7"}},(CAT.find(c=>c.id===t.cid)||{item:"—"}).item),h("td",{style:{fontWeight:700,color:"#7eb8f7"}},t.pts),h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),h("td",null,t.status==="pend"&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11,color:"#f87171"},onClick:()=>del(t.id)},"✕"))))
+      )
+    )))
+  );
+}
+
+// ── VALIDAÇÃO ─────────────────────────────────────────────────────────────────
+function Val({user,trfs,setT,users,pends,notify}){
+  const[obs,setObs]=useState({});
+  const ps=pends();
+  const uMap=Object.fromEntries(users.map(u=>[u.id,u]));
+  async function acao(id,tipo){
+    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
+    const body=tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:obs[id]||"Sem motivo."};
+    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
+    catch{notify("Erro.","err");}
+  }
+  return h("div",null,h("h2",{className:"ph"},"Validação"),
+    ps.length===0&&h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#3a5168"}},"✅ Nenhuma pendência."),
+    ps.map(t=>{const col=uMap[t.uid],cat=CAT.find(c=>c.id===t.cid);return h("div",{key:t.id,className:"card",style:{padding:14,marginBottom:10}},
+      h("div",{style:{fontWeight:700,fontSize:13,marginBottom:6}},"Item "+(cat?cat.item:"—")+" — "+t.desc),
+      h("div",{style:{fontSize:12,color:"#4a6580",marginBottom:8}},h("b",{style:{color:"#e2e8f0"}},(col?col.nome:"—"))," • "+t.data+" • ",h("b",{style:{color:"#7eb8f7"}},t.pts+" pts")),
+      t.obs&&h("div",{style:{fontSize:11,color:"#7eb8f7",marginBottom:8}},"Obs: "+t.obs),
+      h("div",{className:"field"},h("input",{placeholder:"Observação...",value:obs[t.id]||"",onChange:e=>setObs(p=>({...p,[t.id]:e.target.value}))})),
+      h("div",{className:"btn-row"},h("button",{className:"btn",onClick:()=>acao(t.id,"ap")},"✓ Aprovar"),h("button",{className:"btnd",onClick:()=>acao(t.id,"rej")},"✗ Rejeitar"))
+    );})
+  );
+}
+
+// ── MAPA INDIVIDUAL ───────────────────────────────────────────────────────────
+function MapaInd({user,users,trfs,comp,getR,myCols,getExc}){
+  const cs=user.role==="colaborador"?[user]:myCols();
+  const[sid,setSid]=useState(user.role==="colaborador"?user.id:(cs[0]?cs[0].id:""));
+  const sel=cs.find(u=>u.id===sid)||cs[0];
+  const aprov=sel?trfs.filter(t=>t.uid===sel.id&&t.comp===comp&&t.status==="ap_ger"):[];
+  const ptB=aprov.reduce((s,t)=>s+t.pts,0);
+  const excAnt=sel?getExc(sel.id,comp):0;
+  const res=sel?getR(sel.id,comp):{total:0,ef:0,exc:0};
+  const g=gpfi(res.ef,sel?sel.vb:VB);
+
+  // #4 — imprimir PDF
+  function imprimirPDF(){
+    const conteudo=document.getElementById("mapa-ind-print");
+    if(!conteudo)return;
+    const w=window.open("","_blank","width=900,height=700");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa Individual GPFI</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:4px 7px;font-size:11px}th{background:#dce6f1}</style></head><body>'+conteudo.innerHTML+'</body></html>');
+    w.document.close();
+    setTimeout(()=>{w.focus();w.print();},400);
+  }
+
+  return h("div",null,
+    h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},
+      h("h2",{className:"ph",style:{margin:0}},"Mapa Individual"),
+      user.role!=="colaborador"&&h("select",{style:{maxWidth:260,fontSize:12},value:sid,onChange:e=>setSid(e.target.value)},cs.map(u=>h("option",{key:u.id,value:u.id},u.nome+" — "+u.unid))),
+      h("button",{className:"btns",style:{marginLeft:"auto"},onClick:imprimirPDF},"🖨️ Gerar PDF")
+    ),
+    sel&&h("div",{id:"mapa-ind-print",className:"mapa",style:{padding:0}},
+      h("div",{style:{background:"#dce6f1",padding:"10px 14px",borderBottom:"2px solid #1d4ed8",textAlign:"center"}},h("div",{style:{fontWeight:900,fontSize:15,color:"#1d4ed8"}},"MAPA INDIVIDUAL DE APURAÇÃO DE PRODUTIVIDADE"),h("div",{style:{fontSize:10,color:"#444"}},"Prefeitura Municipal de Santo André — GPFI")),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr auto auto",borderBottom:"1px solid #aaa"}},
+        h("div",{style:{padding:"7px 12px",borderRight:"1px solid #aaa"}},h("b",null,"NOME: "),sel.nome),
+        h("div",{style:{padding:"7px 12px",borderRight:"1px solid #aaa",textAlign:"center",minWidth:80}},h("div",{style:{fontSize:9,fontWeight:700}},"I.F."),h("b",null,sel.mat)),
+        h("div",{style:{padding:"7px 12px",textAlign:"center",minWidth:90}},h("div",{style:{fontSize:9,fontWeight:700}},"MÊS/ANO"),h("b",null,fmtComp(comp)))
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:"1px solid #aaa"}},
+        h("div",{style:{padding:"8px 12px",borderRight:"1px solid #aaa",textAlign:"center"}},h("div",{style:{fontSize:9,fontWeight:700}},"PP — Pontos Produzidos"),h("div",{style:{fontSize:20,fontWeight:900,color:"#1d4ed8"}},ptB)),
+        h("div",{style:{padding:"8px 12px",borderRight:"1px solid #aaa",textAlign:"center"}},h("div",{style:{fontSize:9,fontWeight:700}},"Excedente Anterior"),h("div",{style:{fontSize:20,fontWeight:900,color:"#d97706"}},excAnt)),
+        h("div",{style:{padding:"8px 12px",textAlign:"center"}},h("div",{style:{fontSize:9,fontWeight:700}},"PN — Total"),h("div",{style:{fontSize:20,fontWeight:900,color:res.ef>=MINP?"#059669":"#dc2626"}},res.total))
+      ),
+      h("div",{style:{padding:"10px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"TAREFAS APROVADAS"),
+        h("table",{style:{marginTop:6}},
+          h("thead",null,h("tr",null,["Item","Natureza do Serviço","Qtd","Pts/Un","Total","Data"].map(x=>h("th",{key:x},x)))),
+          h("tbody",null,
+            aprov.length===0&&h("tr",null,h("td",{colSpan:6,style:{textAlign:"center",padding:10,color:"#888"}},"Nenhuma tarefa aprovada.")),
+            aprov.map(t=>{const cat=CAT.find(c=>c.id===t.cid);return h("tr",{key:t.id},h("td",{style:{fontWeight:700,color:"#1d4ed8"}},cat?cat.item:"—"),h("td",null,t.desc),h("td",{style:{textAlign:"center"}},t.qtd||1),h("td",{style:{textAlign:"center"}},cat?cat.pts:0),h("td",{style:{textAlign:"center",fontWeight:700}},t.pts),h("td",{style:{whiteSpace:"nowrap"}},t.data));}),
+            h("tr",{style:{background:"#dce6f1",fontWeight:900}},h("td",{colSpan:4,style:{textAlign:"right"}},"TOTAL DE PONTOS:"),h("td",{style:{textAlign:"center",fontSize:14}},ptB),h("td",null))
+          )
+        )
+      ),
+      h("div",{style:{padding:"10px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"DEMONSTRATIVO DE CÁLCULO"),
+        h("table",{style:{marginTop:6}},h("tbody",null,
+          h("tr",null,h("td",{style:{width:"60%"}},"Pontos Efetivos (PN)"),h("td",{style:{textAlign:"right",fontWeight:700,color:"#1d4ed8"}},res.ef)),
+          h("tr",null,h("td",null,"Vencimento-Base"),h("td",{style:{textAlign:"right"}},fmtBRL(sel.vb))),
+          h("tr",null,h("td",null,"Percentual (0,0333% × pts)"),h("td",{style:{textAlign:"right"}},(res.ef*VPCT*100).toFixed(4)+"%")),
+          h("tr",{style:{background:"#dce6f1",fontWeight:900}},h("td",null,"TOTAL A PAGAR (R$)"),h("td",{style:{textAlign:"right",fontSize:14,color:"#059669"}},fmtBRL(g)))
+        )),
+        h("div",{style:{marginTop:8,padding:"5px 8px",background:res.ef>=MINP?"#dcfce7":"#fef9c3",borderRadius:4,fontWeight:700,fontSize:11,color:res.ef>=MINP?"#166534":"#92400e"}},res.ef>=MINP?"✅ GPFI HABILITADO":"⚠️ GPFI NÃO HABILITADO — abaixo de "+MINP+" pontos")
+      ),
+      // #6 — sem "Dep. de Tributação"
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"18px 12px",gap:16}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Ciente — "+sel.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+sel.mat))),
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Superior Imediato"))
+      )
+    )
+  );
+}
+
+// ── MAPA GERAL ────────────────────────────────────────────────────────────────
+function MapaGer({users,comp,getR,mediaAptos,myCols}){
+  const cs=myCols(),gest=users.filter(u=>["gerente","encarregado","diretor"].includes(u.role)&&u.ativo);
+  const mef=mediaAptos(comp),gM=gpfi(mef,VB); // #5
+  const tA=cs.reduce((s,u)=>s+gpfi(getR(u.id,comp).ef,u.vb),0);
+  const tT=tA+gest.length*gM;
+
+  // #4 — PDF mapa geral
+  function imprimirPDF(){
+    const conteudo=document.getElementById("mapa-ger-print");
+    if(!conteudo)return;
+    const w=window.open("","_blank","width=900,height=700");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa Geral GPFI</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:4px 7px;font-size:11px}th{background:#dce6f1}</style></head><body>'+conteudo.innerHTML+'</body></html>');
+    w.document.close();
+    setTimeout(()=>{w.focus();w.print();},400);
+  }
+
+  return h("div",null,
+    h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},
+      h("h2",{className:"ph",style:{margin:0}},"Mapa Geral — "+fmtComp(comp)),
+      h("button",{className:"btns",style:{marginLeft:"auto"},onClick:imprimirPDF},"🖨️ Gerar PDF")
+    ),
+    h("div",{className:"kgrid"},h(KCard,{icon:"👥",lbl:"Auditores",val:cs.length,cor:"#3b82f6"}),h(KCard,{icon:"✅",lbl:"Aptos",val:cs.filter(u=>getR(u.id,comp).ef>=MINP).length,cor:"#10b981"}),h(KCard,{icon:"📈",lbl:"Média Aptos",val:mef,cor:"#7eb8f7"}),h(KCard,{icon:"💰",lbl:"GPFI Total",val:fmtBRL(tT),cor:"#a78bfa"})),
+    h("div",{id:"mapa-ger-print",className:"mapa",style:{padding:0}},
+      h("div",{style:{background:"#dce6f1",padding:"10px 14px",borderBottom:"2px solid #1d4ed8",textAlign:"center"}},h("div",{style:{fontWeight:900,fontSize:15,color:"#1d4ed8"}},"MAPA GERAL DE APURAÇÃO DE PRODUTIVIDADE"),h("div",{style:{fontSize:10,color:"#444"}},"Prefeitura Municipal de Santo André — GPFI — "+fmtComp(comp))),
+      h("div",{style:{padding:"8px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"AUDITORES FISCAIS"),
+        h("table",{style:{marginTop:6}},
+          h("thead",null,h("tr",null,["#","Nome","I.F.","Unid.","Pt.Ef.","GPFI (R$)","Status"].map(x=>h("th",{key:x},x)))),
+          h("tbody",null,
+            cs.map((u,i)=>{const r=getR(u.id,comp);return h("tr",{key:u.id},h("td",null,i+1),h("td",null,u.nome),h("td",null,u.mat),h("td",null,u.unid),h("td",{style:{textAlign:"center",color:r.ef>=MINP?"#059669":"#b45309",fontWeight:700}},r.ef),h("td",{style:{textAlign:"right"}},fmtBRL(gpfi(r.ef,u.vb))),h("td",null,r.ef>=MINP?"Apto":"Abaixo"));}),
+            h("tr",{style:{fontWeight:900,background:"#dce6f1"}},h("td",{colSpan:5,style:{textAlign:"right"}},"SUBTOTAL AUDITORES:"),h("td",{style:{textAlign:"right"}},fmtBRL(tA)),h("td",null))
+          )
+        )
+      ),
+      h("div",{style:{padding:"8px 12px",borderBottom:"1px solid #aaa",background:"#f5f3ff"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"MÉDIA DOS AUDITORES APTOS: "),h("b",{style:{color:"#059669",fontSize:14}},mef+" pontos — GPFI: "+fmtBRL(gM))
+      ),
+      h("div",{style:{padding:"8px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"GESTORES / ENCARREGADOS / DIRETOR"),
+        h("table",{style:{marginTop:6}},
+          h("thead",null,h("tr",null,["Nome","I.F.","Cargo","Unid.","Pt.(Média)","GPFI (R$)"].map(x=>h("th",{key:x},x)))),
+          h("tbody",null,
+            gest.map(g=>h("tr",{key:g.id},h("td",null,g.nome),h("td",null,g.mat),h("td",null,g.cargo),h("td",null,g.unid),h("td",{style:{textAlign:"center"}},mef),h("td",{style:{textAlign:"right"}},fmtBRL(gM)))),
+            h("tr",{style:{fontWeight:900,background:"#dce6f1"}},h("td",{colSpan:5,style:{textAlign:"right"}},"SUBTOTAL GESTORES:"),h("td",{style:{textAlign:"right"}},fmtBRL(gest.length*gM)))
+          )
+        )
+      ),
+      h("div",{style:{padding:"8px 12px",background:"#dcfce7",fontWeight:900,fontSize:13}},
+        "TOTAL GERAL GPFI (Auditores + Gestores): ",h("span",{style:{color:"#059669",fontSize:15}},fmtBRL(tT))
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"20px 12px",gap:20}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Diretor do Departamento de Tributação")),
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Secretário da Receita e Captação de Recursos"))
+      )
+    )
+  );
+}
+
+// ── RELATÓRIOS ────────────────────────────────────────────────────────────────
+function Rel({comp,comps,getR,mediaAptos,myCols}){
+  const all=[comp,...Object.keys(comps).filter(c=>c!==comp)].sort().reverse();
+  const[cS,setCS]=useState(comp);
+  const cs=myCols(),mef=mediaAptos(cS);
+  const aptos=cs.filter(u=>getR(u.id,cS).ef>=MINP).length;
+  return h("div",null,
+    h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},h("h2",{className:"ph",style:{margin:0}},"Relatórios"),h("select",{style:{maxWidth:180,marginLeft:"auto"},value:cS,onChange:e=>setCS(e.target.value)},all.map(c=>h("option",{key:c,value:c},fmtComp(c)+(c===comp?" (ativa)":""))))),
+    h("div",{className:"kgrid"},h(KCard,{icon:"✅",lbl:"Aptos",val:aptos+"/"+cs.length,cor:"#10b981"}),h(KCard,{icon:"📈",lbl:"Média Aptos",val:mef,cor:"#3b82f6"}),h(KCard,{icon:"💰",lbl:"GPFI/Média",val:fmtBRL(gpfi(mef,VB)),cor:"#a78bfa"}),h(KCard,{icon:"📊",lbl:"Total",val:fmtBRL(cs.reduce((s,u)=>s+gpfi(getR(u.id,cS).ef,u.vb),0)),cor:"#f59e0b"})),
+    h("div",{className:"card"},h("div",{className:"card-head"},"Desempenho — "+fmtComp(cS)),h("div",{className:"tbl-wrap"},h("table",null,
+      h("thead",null,h("tr",null,["#","Auditor","I.F.","Unid.","Pt.Ef.","Exc.","GPFI","Status"].map(x=>h("th",{key:x},x)))),
+      h("tbody",null,cs.map((u,i)=>{const r=getR(u.id,cS);return h("tr",{key:u.id},h("td",null,i+1),h("td",{style:{fontWeight:700,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},u.nome),h("td",null,u.mat),h("td",null,h(Bdg,{lbl:u.unid,cor:UNID_COR[u.unid]||"#555"})),h("td",{style:{fontWeight:700,color:r.ef>=MINP?"#6ee7b7":"#fcd34d"}},r.ef),h("td",null,r.exc),h("td",{style:{whiteSpace:"nowrap"}},fmtBRL(gpfi(r.ef,u.vb))),h("td",null,h(Bdg,{lbl:r.ef>=MINP?"Apto":"Abaixo",cor:r.ef>=MINP?"#10b981":"#f59e0b"})));})
+      )
+    )))
+  );
+}
+
+// ── USUÁRIOS (#1 hierarquia, #2 diretor, #3 novo colaborador) ────────────────
+function Usr({users,setU,notify}){
+  const[eId,setEId]=useState(null);
+  const[eD,setED]=useState({});
+  const[sav,setSav]=useState(false);
+  const[showNew,setShowNew]=useState(false);
+  const[nf,setNF]=useState({nome:"",mat:"",email:"",cargo:"Auditor Fiscal",role:"colaborador",unid:"GFI",vb:VB.toString(),pw:"123456",ativo:true,sup_id:""});
+  const[nsav,setNSav]=useState(false);
+
+  // #1 — potenciais superiores por hierarquia
+  function getSups(role,unid){
+    if(role==="colaborador")return users.filter(u=>u.role==="encarregado"&&u.unid===unid&&u.ativo);
+    if(role==="encarregado")return users.filter(u=>u.role==="gerente"&&u.unid===unid&&u.ativo);
+    if(role==="gerente")    return users.filter(u=>u.role==="diretor"&&u.ativo);
+    return[];
+  }
+
+  function startEdit(u){setEId(u.id);setED({nome:u.nome,cargo:u.cargo,email:u.email,mat:u.mat,vb:u.vb.toString(),pw:"",ativo:u.ativo,role:u.role,unid:u.unid,sup_id:u.sup_id||""});}
+
+  async function save(id){
+    const vb=parseFloat(eD.vb.replace(",","."));
+    if(isNaN(vb)||vb<=0){notify("Vencimento inválido.","err");return;}
+    setSav(true);
+    const body={nome:eD.nome,cargo:eD.cargo,email:eD.email,mat:eD.mat,vb,ativo:eD.ativo,role:eD.role,unid:eD.unid,sup_id:eD.sup_id||null};
+    if(eD.pw.trim())body.pw=eD.pw.trim();
+    try{await sb("PATCH","usuarios","id=eq."+id,body);setU(p=>p.map(u=>u.id!==id?u:{...u,...body}));setEId(null);notify("Atualizado!");}
+    catch(e){notify("Erro: "+e.message,"err");}
+    setSav(false);
+  }
+
+  // #3 — inserir novo colaborador
+  async function criarUser(){
+    if(!nf.nome.trim()||!nf.email.trim()){notify("Nome e e-mail obrigatórios.","err");return;}
+    setNSav(true);
+    try{
+      const row={id:genId(),nome:nf.nome,mat:nf.mat,email:nf.email,cargo:nf.cargo,role:nf.role,unid:nf.unid,vb:parseFloat(nf.vb)||VB,pw:nf.pw||"123456",ativo:true,sup_id:nf.sup_id||null};
+      await sb("POST","usuarios","",row);
+      setU(p=>[...p,toUser(row)].sort((a,b)=>a.nome.localeCompare(b.nome)));
+      setShowNew(false);
+      setNF({nome:"",mat:"",email:"",cargo:"Auditor Fiscal",role:"colaborador",unid:"GFI",vb:VB.toString(),pw:"123456",ativo:true,sup_id:""});
+      notify("Usuário criado!");
+    }catch(e){notify("Erro: "+e.message,"err");}
+    setNSav(false);
+  }
+
+  const se=(k,v)=>setED(p=>({...p,[k]:v}));
+  const sn=(k,v)=>setNF(p=>({...p,[k]:v}));
+
+  // #1 — organizar hierarquia
+  const gestores=users.filter(u=>u.role==="gerente"&&u.ativo);
+  const encs=users.filter(u=>u.role==="encarregado"&&u.ativo);
+  const colab=users.filter(u=>u.role==="colaborador"&&u.ativo);
+  const outros=users.filter(u=>["admin","diretor"].includes(u.role)&&u.ativo);
+
+  function renderUser(u){
+    return h("div",{key:u.id,className:"card",style:{marginBottom:6}},
+      eId===u.id?h("div",{style:{padding:14}},
+        h("div",{style:{fontWeight:700,color:"#7eb8f7",marginBottom:12}},"Editando: "+u.nome),
+        h("div",{className:"g3"},
+          h("div",{className:"field"},h("label",{className:"lbl"},"Nome"),h("input",{value:eD.nome,onChange:e=>se("nome",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Cargo"),h("input",{value:eD.cargo,onChange:e=>se("cargo",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Matrícula"),h("input",{value:eD.mat,onChange:e=>se("mat",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"E-mail"),h("input",{value:eD.email,onChange:e=>se("email",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Nova Senha"),h("input",{type:"password",value:eD.pw,onChange:e=>se("pw",e.target.value),placeholder:"Em branco = manter"})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Vencimento (R$)"),h("input",{type:"number",step:"0.01",value:eD.vb,onChange:e=>se("vb",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Perfil"),h("select",{value:eD.role,onChange:e=>se("role",e.target.value)},Object.entries(ROLE_LBL).map(([k,v])=>h("option",{key:k,value:k},v)))),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Unidade"),h("select",{value:eD.unid,onChange:e=>se("unid",e.target.value)},UNIDS.map(u=>h("option",{key:u,value:u},u)))),
+          // #1 — superior
+          h("div",{className:"field"},h("label",{className:"lbl"},"Superior Imediato"),h("select",{value:eD.sup_id||"",onChange:e=>se("sup_id",e.target.value)},h("option",{value:""},"— nenhum —"),getSups(eD.role,eD.unid).map(s=>h("option",{key:s.id,value:s.id},s.nome))))
+        ),
+        h("div",{style:{display:"flex",alignItems:"center",gap:14,marginTop:10}},
+          h("label",{style:{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:13}},h("input",{type:"checkbox",checked:eD.ativo,onChange:e=>se("ativo",e.target.checked),style:{width:15,height:15}}),h("span",{style:{color:eD.ativo?"#6ee7b7":"#f87171",fontWeight:700}},eD.ativo?"Ativo":"Inativo")),
+          h("div",{style:{marginLeft:"auto"},className:"btn-row"},h("button",{className:"btn",onClick:()=>save(u.id),disabled:sav},sav?"Salvando...":"💾 Salvar"),h("button",{className:"btns",onClick:()=>setEId(null)},"Cancelar"))
+        )
+      ):h("div",{style:{display:"flex",alignItems:"center",padding:"10px 14px",gap:10,flexWrap:"wrap"}},
+        h("div",{style:{flex:1,minWidth:180}},h("div",{style:{fontWeight:700,fontSize:13}},u.nome),h("div",{style:{fontSize:11,color:"#4a6580"}},u.mat+" • "+u.cargo)),
+        h("div",{style:{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}},
+          h(Bdg,{lbl:ROLE_LBL[u.role]||u.role,cor:u.role==="admin"?"#ef4444":u.role==="diretor"?"#f97316":u.role==="gerente"?"#eab308":u.role==="encarregado"?"#3b82f6":"#10b981"}),
+          h(Bdg,{lbl:u.unid,cor:UNID_COR[u.unid]||"#555"}),
+          h(Bdg,{lbl:u.ativo?"Ativo":"Inativo",cor:u.ativo?"#10b981":"#ef4444"}),
+          h("button",{className:"btns",style:{padding:"4px 10px",fontSize:11},onClick:()=>startEdit(u)},"✏️ Editar")
+        )
+      )
+    );
+  }
+
+  return h("div",null,
+    // #3 — cabeçalho com botão novo
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}},
+      h("h2",{className:"ph",style:{margin:0}},"Usuários — "+users.filter(u=>u.ativo).length+" ativos"),
+      h("button",{className:"btn",onClick:()=>setShowNew(!showNew)},"+ Novo Colaborador")
+    ),
+
+    // #3 — formulário novo colaborador
+    showNew&&h("div",{className:"card",style:{marginBottom:14}},
+      h("div",{className:"card-head"},"Novo Colaborador"),
+      h("div",{style:{padding:14}},
+        h("div",{className:"g3"},
+          h("div",{className:"field"},h("label",{className:"lbl"},"Nome Completo *"),h("input",{value:nf.nome,onChange:e=>sn("nome",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Matrícula / I.F."),h("input",{value:nf.mat,onChange:e=>sn("mat",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"E-mail (login) *"),h("input",{value:nf.email,onChange:e=>sn("email",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Cargo"),h("input",{value:nf.cargo,onChange:e=>sn("cargo",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Perfil"),h("select",{value:nf.role,onChange:e=>sn("role",e.target.value)},Object.entries(ROLE_LBL).map(([k,v])=>h("option",{key:k,value:k},v)))),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Unidade"),h("select",{value:nf.unid,onChange:e=>sn("unid",e.target.value)},UNIDS.map(u=>h("option",{key:u,value:u},u)))),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Superior Imediato"),h("select",{value:nf.sup_id||"",onChange:e=>sn("sup_id",e.target.value)},h("option",{value:""},"— nenhum —"),getSups(nf.role,nf.unid).map(s=>h("option",{key:s.id,value:s.id},s.nome)))),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Vencimento-Base (R$)"),h("input",{type:"number",step:"0.01",value:nf.vb,onChange:e=>sn("vb",e.target.value)})),
+          h("div",{className:"field"},h("label",{className:"lbl"},"Senha Inicial"),h("input",{value:nf.pw,onChange:e=>sn("pw",e.target.value)}))
+        ),
+        h("div",{className:"btn-row"},h("button",{className:"btn",onClick:criarUser,disabled:nsav},nsav?"Salvando...":"✅ Criar Usuário"),h("button",{className:"btns",onClick:()=>setShowNew(false)},"Cancelar"))
+      )
+    ),
+
+    // #1 — exibir hierarquia
+    outros.length>0&&h("div",null,h("div",{style:{fontSize:11,fontWeight:700,color:"#64748b",margin:"10px 0 6px"}},"▌ ADMINISTRAÇÃO"),outros.map(renderUser)),
+    gestores.length>0&&h("div",null,h("div",{style:{fontSize:11,fontWeight:700,color:"#eab308",margin:"10px 0 6px"}},"▌ GERENTES"),gestores.map(g=>h("div",{key:g.id},
+      renderUser(g),
+      encs.filter(e=>e.unid===g.unid).map(e=>h("div",{key:e.id,style:{paddingLeft:20,borderLeft:"2px solid #1e3148",marginLeft:16}},
+        renderUser(e),
+        colab.filter(c=>c.unid===e.unid&&c.sup_id===e.id).map(c=>h("div",{key:c.id,style:{paddingLeft:20,borderLeft:"2px solid #1e3148",marginLeft:16}},renderUser(c)))
+      ))
+    ))),
+    // colaboradores sem encarregado definido
+    colab.filter(c=>!encs.find(e=>e.id===c.sup_id)).length>0&&h("div",null,
+      h("div",{style:{fontSize:11,fontWeight:700,color:"#94a3b8",margin:"10px 0 6px"}},"▌ COLABORADORES SEM ENCARREGADO"),
+      colab.filter(c=>!encs.find(e=>e.id===c.sup_id)).map(renderUser)
+    )
+  );
+}
+
+// ── COMPETÊNCIA ───────────────────────────────────────────────────────────────
+function Comp({comp,setComp,users,comps,setC,exc,setE,getR,notify}){
+  const[confirm,setConfirm]=useState(false);
+  const[sav,setSav]=useState(false);
+  function nextComp(c){const[y,m]=c.split("-").map(Number);const d=new Date(y,m,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+  async function encerrar(){
+    setSav(true);
+    try{
+      const nc=nextComp(comp);
+      const rows=users.map(u=>{const r=getR(u.id,comp);return{comp,user_id:u.id,efetivos:r.ef,excedente:r.exc,total:r.total};});
+      await sb("POST","competencias","",rows);
+      const excRows=users.filter(u=>getR(u.id,comp).exc>0).map(u=>{const r=getR(u.id,comp);return{user_id:u.id,comp:nc,valor:r.exc};});
+      if(excRows.length)await sb("POST","excedentes","on_conflict=user_id,comp",excRows);
+      await sb("PATCH","config","chave=eq.comp_ativa",{valor:nc});
+      const ne={...exc};users.forEach(u=>{const r=getR(u.id,comp);if(r.exc>0)ne[u.id+"_"+nc]=r.exc;});setE(ne);
+      const snap={};users.forEach(u=>{snap[u.id]=getR(u.id,comp);});setC(p=>({...p,[comp]:snap}));
+      setComp(nc);setConfirm(false);notify("Competência "+fmtComp(comp)+" encerrada!");
+    }catch(e){notify("Erro: "+e.message,"err");}
+    setSav(false);
+  }
+  const hist=Object.keys(comps).sort().reverse();
+  return h("div",null,h("h2",{className:"ph"},"Gestão de Competência"),
+    h("div",{className:"card",style:{padding:18,marginBottom:14}},
+      h("div",{style:{fontWeight:700,fontSize:15,marginBottom:8}},"Ativa: ",h("span",{style:{color:"#3b82f6"}},fmtComp(comp))),
+      h("p",{style:{color:"#4a6580",fontSize:13,marginBottom:14}},"Encerrar salva snapshot, transfere excedentes e avança o período."),
+      !confirm?h("button",{className:"btnd",onClick:()=>setConfirm(true)},"🔒 Encerrar "+fmtComp(comp))
+        :h("div",{style:{background:"#1a0000",border:"1px solid #dc2626",borderRadius:8,padding:14}},
+          h("p",{style:{color:"#fca5a5",fontWeight:700,marginBottom:10}},"⚠️ Confirma? Ação irreversível."),
+          h("div",{className:"btn-row"},h("button",{className:"btnd",onClick:encerrar,disabled:sav},sav?"Processando...":"Confirmar"),h("button",{className:"btns",onClick:()=>setConfirm(false)},"Cancelar"))
+        )
+    ),
+    hist.length>0&&h("div",{className:"card"},h("div",{className:"card-head"},"Histórico ("+hist.length+")"),h("div",{className:"tbl-wrap"},h("table",null,
+      h("thead",null,h("tr",null,["Competência","Colaboradores","Média","Status"].map(x=>h("th",{key:x},x)))),
+      h("tbody",null,hist.map(c=>{const s=comps[c],ids=Object.keys(s);const med=ids.length?Math.round(ids.reduce((a,id)=>a+(s[id]?s[id].ef:0),0)/ids.length):0;return h("tr",{key:c},h("td",{style:{fontWeight:700,color:"#7eb8f7"}},fmtComp(c)),h("td",null,ids.length),h("td",{style:{fontWeight:700,color:"#3b82f6"}},med),h("td",null,h(Bdg,{lbl:"Encerrada",cor:"#10b981"})));})
+      )
+    )))
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
