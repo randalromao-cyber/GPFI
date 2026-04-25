@@ -1,19 +1,15 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GPFI — Prefeitura de Santo André</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="app.js" type="text/babel"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d1b2a; color: #dde6f0; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-</body>
-</html>
+-- Adicionar coluna de superior hierárquico
+alter table usuarios add column if not exists sup_id text references usuarios(id);
+
+-- Definir superiores iniciais
+-- Encarregados → Gerentes
+update usuarios set sup_id = (select id from usuarios where role='gerente' and unid='GFI' limit 1) where role='encarregado' and unid='GFI';
+update usuarios set sup_id = (select id from usuarios where role='gerente' and unid='GFM' limit 1) where role='encarregado' and unid='GFM';
+update usuarios set sup_id = (select id from usuarios where role='gerente' and unid='GCF' limit 1) where role='encarregado' and unid='GCF';
+
+-- Colaboradores → Encarregados
+update usuarios set sup_id = (select id from usuarios where role='encarregado' and unid='GFI' limit 1) where role='colaborador' and unid='GFI';
+update usuarios set sup_id = (select id from usuarios where role='encarregado' and unid='GFM' limit 1) where role='colaborador' and unid='GFM';
+update usuarios set sup_id = (select id from usuarios where role='encarregado' and unid='GCF' limit 1) where role='colaborador' and unid='GCF';
+
+select id, nome, role, unid, sup_id from usuarios order by role, unid;
