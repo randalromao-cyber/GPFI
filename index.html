@@ -247,8 +247,23 @@ function App(){
 
   const pends=useCallback(()=>{
     if(!user)return[];
-    if(user.role==="encarregado")return trfs.filter(t=>{const u=users.find(x=>x.id===t.uid);return u&&u.unid===user.unid&&t.status==="pend";});
-    if(user.role==="gerente")    return trfs.filter(t=>{const u=users.find(x=>x.id===t.uid);return u&&u.unid===user.unid&&t.status==="ap_enc";});
+    if(user.role==="encarregado"){
+      return trfs.filter(t=>{
+        const u=users.find(x=>x.id===t.uid);
+        return u&&u.unid===user.unid&&t.status==="pend"&&u.sup_id===user.id;
+      });
+    }
+    if(user.role==="gerente"){
+      return trfs.filter(t=>{
+        const u=users.find(x=>x.id===t.uid);
+        if(!u||u.unid!==user.unid)return false;
+        // sem encarregado: gerente valida direto (pend → ap_ger)
+        const temEnc=users.some(x=>x.role==="encarregado"&&x.id===u.sup_id);
+        if(!temEnc&&t.status==="pend")return true;
+        // com encarregado: gerente valida após enc aprovar
+        return t.status==="ap_enc";
+      });
+    }
     return[];
   },[user,trfs,users]);
 
@@ -406,7 +421,11 @@ function Val({user,trfs,setT,users,pends,notify}){
   const ps=pends();
   const uMap=Object.fromEntries(users.map(u=>[u.id,u]));
   async function acao(id,tipo){
-    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
+    const trf=trfs.find(t=>t.id===id);
+    const col=users.find(u=>u.id===trf?.uid);
+    const temEnc=col&&users.some(x=>x.role==="encarregado"&&x.id===col.sup_id);
+    // gerente aprovando auditor sem encarregado → ap_ger direto
+    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":(user.role==="gerente"&&!temEnc?"ap_ger":"ap_ger")):"rej";
     const body=tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:obs[id]||"Sem motivo."};
     try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
     catch{notify("Erro.","err");}
