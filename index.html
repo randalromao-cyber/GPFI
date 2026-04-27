@@ -159,6 +159,7 @@ const CAT=[
   {id:"c52",item:"23.1",pts:1,  desc:"Notificação ISSCC – a cada 50 FMPs lançados",esp:"fmp"},
   {id:"c53",item:"24",  pts:10, desc:"Ficha de Lançamento / sistemas informatizados"},
   {id:"c54",item:"25",  pts:150,desc:"Pesquisa de Valores Imobiliários (por UA)"},
+  {id:"c55",item:"26",  pts:0,  desc:"Estorno em dobro – lavratura indevida ou injustificada de autos de infração, intimações, notificações ou lançamentos com vício",esp:"estorno"},
 ];
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ function fmtBRL(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"B
 
 function calcPts(cid,f){
   const c=CAT.find(x=>x.id===cid);if(!c)return 0;
+  if(c.esp==="estorno")return -(parseInt(f.estorno)||0);
   if(c.esp==="m2"){const d=(parseFloat(f.m2b)||0)-(parseFloat(f.m2a)||0);return d>0?Math.round(d*c.pts):0;}
   if(c.esp==="fmp"){const t=parseFloat(f.ft)||0,v=parseFloat(f.fv)||0;return v?Math.floor((t/v)/50)*c.pts:0;}
   // itens com quantidade
@@ -245,6 +247,7 @@ function App(){
     return[];
   },[user,users,cols]);
 
+  // #6 — Gerente OU Encarregado podem validar tarefas da sua unidade
   const pends=useCallback(()=>{
     if(!user)return[];
     if(user.role==="encarregado"){
@@ -257,11 +260,8 @@ function App(){
       return trfs.filter(t=>{
         const u=users.find(x=>x.id===t.uid);
         if(!u||u.unid!==user.unid)return false;
-        // sem encarregado: gerente valida direto (pend → ap_ger)
-        const temEnc=users.some(x=>x.role==="encarregado"&&x.id===u.sup_id);
-        if(!temEnc&&t.status==="pend")return true;
-        // com encarregado: gerente valida após enc aprovar
-        return t.status==="ap_enc";
+        // gerente vê pend e ap_enc
+        return t.status==="pend"||t.status==="ap_enc";
       });
     }
     return[];
@@ -298,6 +298,8 @@ function App(){
     {id:"mi",  icon:"📋",lbl:"Mapa Ind.",  roles:["admin","diretor","gerente","encarregado","colaborador"]},
     {id:"mg",  icon:"📑",lbl:"Mapa Geral", roles:["admin","diretor","gerente","encarregado"]},
     {id:"rel", icon:"📈",lbl:"Relatórios", roles:["admin","diretor","gerente","encarregado"]},
+    {id:"hmi", icon:"🗂️",lbl:"Hist. Ind.",  roles:["admin","diretor","gerente","encarregado","colaborador"]},
+    {id:"hmg", icon:"📂",lbl:"Hist. Geral", roles:["admin","diretor","gerente","encarregado"]},
     {id:"usr", icon:"👥",lbl:"Usuários",   roles:["admin","diretor"]}, // #2
     {id:"cmp", icon:"📅",lbl:"Competência",roles:["admin","diretor"]}, // #2
   ].filter(n=>n.roles.includes(user.role));
@@ -322,6 +324,8 @@ function App(){
         tab==="mi"  &&h(MapaInd,P),
         tab==="mg"  &&h(MapaGer,P),
         tab==="rel" &&h(Rel,P),
+        tab==="hmi" &&h(HistInd,P),
+        tab==="hmg" &&h(HistGer,P),
         tab==="usr" &&isAdmin&&h(Usr,P),
         tab==="cmp" &&isAdmin&&h(Comp,P),
       )
@@ -371,10 +375,12 @@ function Trfs({user,trfs,setT,comp,notify}){
 
   async function add(){
     if(!form.cid){notify("Selecione um item.","err");return;}
-    if(pts<=0){notify("Pontuação zero.","err");return;}
+    if(pts===0&&cat.esp!=="estorno"){notify("Pontuação zero.","err");return;}
+    // #3 — observação obrigatória
+    if(!form.obs.trim()){notify("Observação é obrigatória.","err");return;}
     setSav(true);
     try{
-      const row={id:"t"+Date.now(),user_id:user.id,comp,cat_id:form.cid,descricao:cat.item+" – "+cat.desc,pts,qtd:parseInt(form.qtd)||1,data:form.data,obs:form.obs||null,status:"pend",m2_atual:form.m2a||null,m2_nova:form.m2b||null,fmp_tot:form.ft||null,fmp_val:form.fv||null};
+      const row={id:"t"+Date.now(),user_id:user.id,comp,cat_id:form.cid,descricao:cat.item+" – "+cat.desc,pts,qtd:parseInt(form.qtd)||1,data:form.data,obs:form.obs,status:"pend",m2_atual:form.m2a||null,m2_nova:form.m2b||null,fmp_tot:form.ft||null,fmp_val:form.fv||null};
       const saved=await sb("POST","tarefas","",row);
       const t=Array.isArray(saved)?saved[0]:saved;
       setT(p=>[toTrf(t),...p]);setForm(F0);setShow(false);notify("Tarefa registrada!");
@@ -396,11 +402,13 @@ function Trfs({user,trfs,setT,comp,notify}){
         temQtd&&h("div",{className:"field"},h("label",{className:"lbl"},"Quantidade"),h("input",{type:"number",min:"1",value:form.qtd,onChange:e=>sf("qtd",e.target.value)})),
         cat&&cat.esp==="m2"&&h("div",{className:"g2"},h("div",{className:"field"},h("label",{className:"lbl"},"Área Atual (m²)"),h("input",{type:"number",step:"0.01",value:form.m2a,onChange:e=>sf("m2a",e.target.value)})),h("div",{className:"field"},h("label",{className:"lbl"},"Área Nova (m²)"),h("input",{type:"number",step:"0.01",value:form.m2b,onChange:e=>sf("m2b",e.target.value)}))),
         // #9 — "Total em R$" para item 23.1
+        cat&&cat.esp==="estorno"&&h("div",{className:"field"},h("label",{className:"lbl"},"Pontos a Estornar (será subtraído)"),h("input",{type:"number",min:"1",value:form.estorno||"",onChange:e=>sf("estorno",e.target.value),placeholder:"Ex: 300"})),
         cat&&cat.esp==="fmp"&&h("div",{className:"g2"},h("div",{className:"field"},h("label",{className:"lbl"},"Total em R$"),h("input",{type:"number",step:"0.01",value:form.ft,onChange:e=>sf("ft",e.target.value)})),h("div",{className:"field"},h("label",{className:"lbl"},"Valor do FMP (R$)"),h("input",{type:"number",step:"0.01",value:form.fv,onChange:e=>sf("fv",e.target.value)}))),
         cat&&h(Fragment,null,
           h("div",{className:"field"},h("label",{className:"lbl"},"Data"),h("input",{type:"date",value:form.data,onChange:e=>sf("data",e.target.value)})),
-          h("div",{className:"field"},h("label",{className:"lbl"},"Observação"),h("textarea",{value:form.obs,onChange:e=>sf("obs",e.target.value)})),
-          h("div",{style:{padding:"8px 10px",background:"#0d1b2a",borderRadius:7,display:"flex",justifyContent:"space-between",marginBottom:10}},h("span",{style:{color:"#4a6580",fontSize:12}},"Item "+cat.item),h("span",{style:{color:"#6ee7b7",fontWeight:900}},"Total: "+pts+" pts"))
+          // #3 — observação obrigatória
+          h("div",{className:"field"},h("label",{className:"lbl"},"Observação ",h("span",{style:{color:"#ef4444"}},"*")),h("textarea",{value:form.obs,onChange:e=>sf("obs",e.target.value),placeholder:"Preenchimento obrigatório..."})),
+          pts!==0&&h("div",{style:{padding:"8px 10px",background:"#0d1b2a",borderRadius:7,display:"flex",justifyContent:"space-between",marginBottom:10}},h("span",{style:{color:"#4a6580",fontSize:12}},"Item "+cat.item),h("span",{style:{color:pts<0?"#f87171":"#6ee7b7",fontWeight:900}},pts<0?"Estorno: "+pts+" pts":"Total: "+pts+" pts"))
         ),
         h("div",{className:"btn-row"},h("button",{className:"btn",onClick:add,disabled:sav},sav?"Salvando...":"Salvar"),h("button",{className:"btns",onClick:()=>{setShow(false);setForm(F0);}},"Cancelar"))
       )
@@ -421,11 +429,7 @@ function Val({user,trfs,setT,users,pends,notify}){
   const ps=pends();
   const uMap=Object.fromEntries(users.map(u=>[u.id,u]));
   async function acao(id,tipo){
-    const trf=trfs.find(t=>t.id===id);
-    const col=users.find(u=>u.id===trf?.uid);
-    const temEnc=col&&users.some(x=>x.role==="encarregado"&&x.id===col.sup_id);
-    // gerente aprovando auditor sem encarregado → ap_ger direto
-    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":(user.role==="gerente"&&!temEnc?"ap_ger":"ap_ger")):"rej";
+    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
     const body=tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:obs[id]||"Sem motivo."};
     try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
     catch{notify("Erro.","err");}
@@ -571,8 +575,8 @@ function MapaGer({users,comp,getR,mediaAptos,myCols}){
           ))
         )
       ),
-      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"20px 12px",gap:20}},
-        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Diretor do Departamento de Tributação")),
+              h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"20px 12px",gap:20}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Diretor do Departamento de Tributos")),
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Secretário da Receita e Captação de Recursos"))
       )
     )
@@ -761,6 +765,139 @@ function Comp({comp,setComp,users,comps,setC,exc,setE,getR,notify}){
       h("tbody",null,hist.map(c=>{const s=comps[c],ids=Object.keys(s);const med=ids.length?Math.round(ids.reduce((a,id)=>a+(s[id]?s[id].ef:0),0)/ids.length):0;return h("tr",{key:c},h("td",{style:{fontWeight:700,color:"#7eb8f7"}},fmtComp(c)),h("td",null,ids.length),h("td",{style:{fontWeight:700,color:"#3b82f6"}},med),h("td",null,h(Bdg,{lbl:"Encerrada",cor:"#10b981"})));})
       )
     )))
+  );
+}
+
+// ── HISTÓRICO INDIVIDUAL ──────────────────────────────────────────────────────
+function HistInd({user,users,comps,myCols,getExc}){
+  const cs=user.role==="colaborador"?[user]:myCols();
+  const hist=Object.keys(comps).sort().reverse();
+  const[cS,setCS]=useState(hist[0]||"");
+  const[sid,setSid]=useState(user.role==="colaborador"?user.id:(cs[0]?cs[0].id:""));
+  const sel=cs.find(u=>u.id===sid)||cs[0];
+
+  function imprimirPDF(){
+    const el=document.getElementById("hist-ind-print");if(!el)return;
+    const w=window.open("","_blank","width=900,height=700");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa Histórico Individual</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:4px 7px;font-size:11px}th{background:#dce6f1}</style></head><body>'+el.innerHTML+'</body></html>');
+    w.document.close();setTimeout(()=>{w.focus();w.print();},400);
+  }
+
+  if(!hist.length)return h("div",null,h("h2",{className:"ph"},"Histórico Individual"),h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#3a5168"}},"Nenhuma competência encerrada."));
+
+  const snap=cS&&comps[cS]?comps[cS]:{};
+  const dados=sel&&snap[sel.id]?snap[sel.id]:{ef:0,exc:0,total:0};
+  const g=gpfi(dados.ef,sel?sel.vb:VB);
+
+  return h("div",null,
+    h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},
+      h("h2",{className:"ph",style:{margin:0}},"Histórico Individual"),
+      user.role!=="colaborador"&&h("select",{style:{maxWidth:240,fontSize:12},value:sid,onChange:e=>setSid(e.target.value)},cs.map(u=>h("option",{key:u.id,value:u.id},u.nome+" — "+u.unid))),
+      h("select",{style:{maxWidth:160,fontSize:12},value:cS,onChange:e=>setCS(e.target.value)},hist.map(c=>h("option",{key:c,value:c},fmtComp(c)))),
+      h("button",{className:"btns",style:{marginLeft:"auto"},onClick:imprimirPDF},"🖨️ Gerar PDF")
+    ),
+    sel&&cS&&h("div",{id:"hist-ind-print",className:"mapa"},
+      h("div",{style:{background:"#dce6f1",padding:"10px 14px",borderBottom:"2px solid #1d4ed8",textAlign:"center"}},
+        h("div",{style:{fontWeight:900,fontSize:15,color:"#1d4ed8"}},"MAPA INDIVIDUAL — HISTÓRICO"),
+        h("div",{style:{fontSize:10,color:"#444"}},"Prefeitura Municipal de Santo André — GPFI — "+fmtComp(cS))
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr auto auto",borderBottom:"1px solid #aaa"}},
+        h("div",{style:{padding:"7px 12px",borderRight:"1px solid #aaa"}},h("b",null,"NOME: "),sel.nome),
+        h("div",{style:{padding:"7px 12px",borderRight:"1px solid #aaa",textAlign:"center",minWidth:80}},h("div",{style:{fontSize:9,fontWeight:700}},"I.F."),h("b",null,sel.mat)),
+        h("div",{style:{padding:"7px 12px",textAlign:"center",minWidth:90}},h("div",{style:{fontSize:9,fontWeight:700}},"MÊS/ANO"),h("b",null,fmtComp(cS)))
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",borderBottom:"1px solid #aaa"}},
+        h("div",{style:{padding:"8px 12px",borderRight:"1px solid #aaa",textAlign:"center"}},h("div",{style:{fontSize:9,fontWeight:700}},"Pt. Efetivos"),h("div",{style:{fontSize:22,fontWeight:900,color:"#1d4ed8"}},dados.ef)),
+        h("div",{style:{padding:"8px 12px",borderRight:"1px solid #aaa",textAlign:"center"}},h("div",{style:{fontSize:9,fontWeight:700}},"Excedente Gerado"),h("div",{style:{fontSize:22,fontWeight:900,color:"#d97706"}},dados.exc)),
+        h("div",{style:{padding:"8px 12px",textAlign:"center"}},h("div",{style:{fontSize:9,fontWeight:700}},"Total"),h("div",{style:{fontSize:22,fontWeight:900,color:dados.ef>=MINP?"#059669":"#dc2626"}},dados.total))
+      ),
+      h("div",{style:{padding:"10px 12px",borderBottom:"1px solid #aaa"}},
+        h("table",null,h("tbody",null,
+          h("tr",null,h("td",{style:{width:"60%"}},"Pontos Efetivos"),h("td",{style:{textAlign:"right",fontWeight:700,color:"#1d4ed8"}},dados.ef)),
+          h("tr",null,h("td",null,"Vencimento-Base"),h("td",{style:{textAlign:"right"}},fmtBRL(sel.vb))),
+          h("tr",null,h("td",null,"Percentual"),h("td",{style:{textAlign:"right"}},(dados.ef*VPCT*100).toFixed(4)+"%")),
+          h("tr",{style:{background:"#dce6f1",fontWeight:900}},h("td",null,"TOTAL PAGO"),h("td",{style:{textAlign:"right",fontSize:14,color:"#059669"}},fmtBRL(g)))
+        )),
+        h("div",{style:{marginTop:8,padding:"5px 8px",background:dados.ef>=MINP?"#dcfce7":"#fef9c3",borderRadius:4,fontWeight:700,fontSize:11,color:dados.ef>=MINP?"#166534":"#92400e"}},dados.ef>=MINP?"✅ GPFI HABILITADO":"⚠️ GPFI NÃO HABILITADO")
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"18px 12px",gap:16}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Ciente — "+sel.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+sel.mat))),
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Superior Imediato"))
+      )
+    )
+  );
+}
+
+// ── HISTÓRICO GERAL ───────────────────────────────────────────────────────────
+function HistGer({users,comps,mediaAptos,myCols}){
+  const hist=Object.keys(comps).sort().reverse();
+  const[cS,setCS]=useState(hist[0]||"");
+  const cs=myCols();
+  const gest=users.filter(u=>["gerente","encarregado","diretor"].includes(u.role)&&u.ativo);
+
+  function imprimirPDF(){
+    const el=document.getElementById("hist-ger-print");if(!el)return;
+    const w=window.open("","_blank","width=900,height=700");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa Histórico Geral</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:4px 7px;font-size:11px}th{background:#dce6f1}</style></head><body>'+el.innerHTML+'</body></html>');
+    w.document.close();setTimeout(()=>{w.focus();w.print();},400);
+  }
+
+  if(!hist.length)return h("div",null,h("h2",{className:"ph"},"Histórico Geral"),h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#3a5168"}},"Nenhuma competência encerrada."));
+
+  const snap=cS&&comps[cS]?comps[cS]:{};
+  // calcular média dos aptos do snapshot
+  const aptosSnap=cs.filter(u=>snap[u.id]&&snap[u.id].ef>=MINP);
+  const mef=aptosSnap.length?Math.round(aptosSnap.reduce((s,u)=>s+snap[u.id].ef,0)/aptosSnap.length):0;
+  const gM=gpfi(mef,VB);
+  const tA=cs.reduce((s,u)=>s+gpfi((snap[u.id]?snap[u.id].ef:0),u.vb),0);
+  const tT=tA+gest.length*gM;
+
+  return h("div",null,
+    h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},
+      h("h2",{className:"ph",style:{margin:0}},"Histórico Geral"),
+      h("select",{style:{maxWidth:180,fontSize:12},value:cS,onChange:e=>setCS(e.target.value)},hist.map(c=>h("option",{key:c,value:c},fmtComp(c)))),
+      h("button",{className:"btns",style:{marginLeft:"auto"},onClick:imprimirPDF},"🖨️ Gerar PDF")
+    ),
+    cS&&h("div",{id:"hist-ger-print",className:"mapa"},
+      h("div",{style:{background:"#dce6f1",padding:"10px 14px",borderBottom:"2px solid #1d4ed8",textAlign:"center"}},
+        h("div",{style:{fontWeight:900,fontSize:15,color:"#1d4ed8"}},"MAPA GERAL — HISTÓRICO"),
+        h("div",{style:{fontSize:10,color:"#444"}},"Prefeitura Municipal de Santo André — GPFI — "+fmtComp(cS))
+      ),
+      h("div",{style:{padding:"8px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"AUDITORES FISCAIS"),
+        h("table",{style:{marginTop:6}},
+          h("thead",null,h("tr",null,["#","Nome","I.F.","Unid.","Pt.Ef.","GPFI (R$)","Status"].map(x=>h("th",{key:x},x)))),
+          h("tbody",null,
+            cs.map((u,i)=>{const d=snap[u.id]||{ef:0,exc:0,total:0};return h("tr",{key:u.id},h("td",null,i+1),h("td",null,u.nome),h("td",null,u.mat),h("td",null,u.unid),h("td",{style:{textAlign:"center",fontWeight:700,color:d.ef>=MINP?"#059669":"#b45309"}},d.ef),h("td",{style:{textAlign:"right"}},fmtBRL(gpfi(d.ef,u.vb))),h("td",null,d.ef>=MINP?"Apto":"Abaixo"));}),
+            h("tr",{style:{fontWeight:900,background:"#dce6f1"}},h("td",{colSpan:5,style:{textAlign:"right"}},"SUBTOTAL AUDITORES:"),h("td",{style:{textAlign:"right"}},fmtBRL(tA)),h("td",null))
+          )
+        )
+      ),
+      h("div",{style:{padding:"8px 12px",borderBottom:"1px solid #aaa",background:"#f5f3ff"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"MÉDIA DOS AUDITORES APTOS: "),h("b",{style:{color:"#059669",fontSize:14}},mef+" pontos — GPFI: "+fmtBRL(gM))
+      ),
+      h("div",{style:{padding:"8px 12px",borderBottom:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"GESTORES"),
+        h("table",{style:{marginTop:6}},
+          h("thead",null,h("tr",null,["Nome","I.F.","Cargo","Unid.","Pt.","GPFI (R$)"].map(x=>h("th",{key:x},x)))),
+          h("tbody",null,
+            gest.map(g=>h("tr",{key:g.id},h("td",null,g.nome),h("td",null,g.mat),h("td",null,g.cargo),h("td",null,g.unid),h("td",{style:{textAlign:"center"}},mef),h("td",{style:{textAlign:"right"}},fmtBRL(gM)))),
+            h("tr",{style:{fontWeight:900,background:"#dce6f1"}},h("td",{colSpan:5,style:{textAlign:"right"}},"SUBTOTAL GESTORES:"),h("td",{style:{textAlign:"right"}},fmtBRL(gest.length*gM)))
+          )
+        )
+      ),
+      h("div",{style:{padding:"8px 12px",background:"#dcfce7",fontWeight:900,fontSize:13}},"TOTAL GERAL: ",h("span",{style:{color:"#059669",fontSize:15}},fmtBRL(tT))),
+      h("div",{style:{padding:"8px 12px",borderTop:"1px solid #aaa"}},
+        h("b",{style:{color:"#1d4ed8",fontSize:12}},"ASSINATURAS DOS GERENTES"),
+        h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16,marginTop:12}},
+          gest.filter(g=>g.role==="gerente").map(g=>h("div",{key:g.id,style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},g.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+g.mat+" — "+g.cargo))))
+        )
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"20px 12px",gap:20}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Diretor do Departamento de Tributos")),
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Secretário da Receita e Captação de Recursos"))
+      )
+    )
   );
 }
 
