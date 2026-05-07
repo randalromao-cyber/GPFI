@@ -8,55 +8,54 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#dde6f0}
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#0d1b2a}::-webkit-scrollbar-thumb{background:#243448;border-radius:3px}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#e2e8f0}::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:3px}
 .app{display:flex;flex-direction:column;min-height:100vh}
-.hdr{height:56px;background:#111f30;border-bottom:1px solid #1e3148;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100}
-.hdr-title{font-weight:900;font-size:14px;color:#7eb8f7}.hdr-sub{font-size:10px;color:#3a5168}
+.hdr{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px #0000000d}
+.hdr-title{font-weight:900;font-size:14px;color:#1d4ed8}.hdr-sub{font-size:10px;color:#64748b}
 .layout{display:flex;flex:1;min-height:0}
-.sbar{width:190px;background:#0f1e2e;border-right:1px solid #1a2e42;flex-shrink:0;display:flex;flex-direction:column;padding:8px 0}
-.sbar-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;cursor:pointer;font-size:12px;text-align:left;background:transparent;color:#4a6580;border-left:3px solid transparent;transition:all .15s}
-.sbar-btn.active{background:#1d4ed815;color:#7eb8f7;border-left:3px solid #2563eb;font-weight:700}
-.sbar-btn:hover:not(.active){color:#94a3b8;background:#ffffff08}
-.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#111f30;border-top:1px solid #1e3148;z-index:100;overflow-x:auto;white-space:nowrap}
-.bnav-btn{display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:8px 12px;border:none;background:transparent;color:#4a6580;font-size:10px;cursor:pointer;min-width:60px}
-.bnav-btn.active{color:#7eb8f7}.bnav-btn span{font-size:18px}
-.main{flex:1;padding:16px;overflow-y:auto;max-height:calc(100vh - 56px)}
-.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
-.kcard{background:#162234;border-radius:10px;padding:14px;border:1px solid #1e3148}
-.card{background:#162234;border-radius:10px;border:1px solid #1e3148;overflow:hidden;margin-bottom:12px}
-.card-head{padding:10px 14px;background:#0f1e2e;border-bottom:1px solid #1e3148;font-weight:700;color:#7eb8f7;font-size:13px}
+.sbar{width:190px;background:#fff;border-right:1px solid #e2e8f0;flex-shrink:0;display:flex;flex-direction:column;padding:8px 0;box-shadow:1px 0 4px #0000000a}
+.sbar-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;cursor:pointer;font-size:12px;text-align:left;background:transparent;color:#64748b;border-left:3px solid transparent;transition:all .15s}
+.sbar-btn.active{background:#eff6ff;color:#1d4ed8;border-left:3px solid #2563eb;font-weight:700}
+.sbar-btn:hover:not(.active){color:#334155;background:#f8fafc}
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;z-index:100;overflow-x:auto;white-space:nowrap;box-shadow:0 -2px 8px #0000000d}
+.bnav-btn{display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:8px 12px;border:none;background:transparent;color:#64748b;font-size:10px;cursor:pointer;min-width:60px}
+.bnav-btn.active{color:#1d4ed8}.bnav-btn span{font-size:18px}
+.main{flex:1;padding:20px;overflow-y:auto;max-height:calc(100vh - 56px)}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+.kcard{background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;box-shadow:0 1px 4px #0000000a}
+.card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:14px;box-shadow:0 1px 4px #0000000a}
+.card-head{padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;color:#1d4ed8;font-size:13px}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{padding:8px 10px;text-align:left;color:#4a6580;font-weight:700;font-size:11px;background:#1a2e42;white-space:nowrap}
-td{padding:8px 10px;color:#b8c8d8;vertical-align:middle;border-bottom:1px solid #0f1e2e}
+th{padding:8px 12px;text-align:left;color:#64748b;font-weight:700;font-size:11px;background:#f8fafc;white-space:nowrap;border-bottom:2px solid #e2e8f0}
+td{padding:8px 12px;color:#334155;vertical-align:middle;border-bottom:1px solid #f1f5f9}
 .field{margin-bottom:10px}
-label.lbl{font-size:11px;color:#4a6580;font-weight:700;display:block;margin-bottom:4px}
-input,select,textarea{width:100%;padding:8px 10px;border-radius:7px;background:#0d1b2a;border:1px solid #1e3148;color:#dde6f0;font-size:13px;outline:none}
+label.lbl{font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:7px;background:#fff;border:1px solid #cbd5e1;color:#1e293b;font-size:13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#2563eb;box-shadow:0 0 0 3px #2563eb18}
 textarea{resize:vertical;min-height:52px}
-.btn{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer}
-.btns{padding:9px 16px;border-radius:7px;background:#1e3148;color:#7eb8f7;font-weight:700;font-size:13px;border:none;cursor:pointer}
+.btn{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer;box-shadow:0 2px 6px #2563eb33}
+.btns{padding:9px 16px;border-radius:7px;background:#f1f5f9;color:#334155;font-weight:700;font-size:13px;border:1px solid #e2e8f0;cursor:pointer}
+.btns:hover{background:#e2e8f0}
 .btnd{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
 .notif{position:fixed;top:14px;right:14px;z-index:9999;padding:10px 18px;border-radius:8px;color:#fff;font-weight:700;font-size:13px;box-shadow:0 4px 20px #0009;max-width:calc(100vw - 28px)}
-h2.ph{color:#7eb8f7;font-weight:900;font-size:17px;margin-bottom:14px}
+h2.ph{color:#1e293b;font-weight:900;font-size:17px;margin-bottom:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.spinner{width:36px;height:36px;border:3px solid #1e3148;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}
+.spinner{width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .mapa{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:12px}
 .mapa table{font-size:11px;width:100%;border-collapse:collapse}
 .mapa th,.mapa td{border:1px solid #aaa;padding:4px 7px}
 .mapa th{background:#dce6f1}
-.load-screen{min-height:100vh;background:#0d1b2a;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
-.login-screen{min-height:100vh;background:linear-gradient(135deg,#0d1b2a,#162e45);display:flex;align-items:center;justify-content:center;padding:16px}
-.hier-tree{padding:8px 0}
-.hier-node{padding:4px 0 4px 20px;border-left:2px solid #1e3148;margin-left:8px}
+.load-screen{min-height:100vh;background:#f0f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.login-screen{min-height:100vh;background:linear-gradient(135deg,#e0e7ff,#f0f4f8,#dbeafe);display:flex;align-items:center;justify-content:center;padding:16px}
 @media print{
   .no-print{display:none!important}
   body{background:#fff;color:#000}
-  .mapa-wrap{margin:0;padding:0}
 }
 @media(max-width:640px){
   .sbar{display:none}.bnav{display:block}
@@ -188,9 +187,9 @@ function toTrf(r){return{id:r.id,uid:r.user_id,comp:r.comp,cid:r.cat_id,desc:r.d
 function genId(){return "u_"+Math.random().toString(36).slice(2,8);}
 
 // ── MINI COMPONENTS ───────────────────────────────────────────────────────────
-function Bdg({lbl,cor}){return h("span",{className:"badge",style:{background:cor+"25",color:cor}},lbl);}
-function KCard({icon,lbl,val,cor,sub}){return h("div",{className:"kcard",style:{borderColor:cor+"40"}},h("div",{style:{fontSize:20,marginBottom:4}},icon),h("div",{style:{fontSize:19,fontWeight:900,color:cor}},val),h("div",{style:{fontSize:11,color:"#4a6580",marginTop:2}},lbl),sub&&h("div",{style:{fontSize:10,color:"#3a5168"}},sub));}
-function Notif({n}){return n?h("div",{className:"notif",style:{background:n.t==="ok"?"#064e3b":"#7f1d1d"}},n.m):null;}
+function Bdg({lbl,cor}){return h("span",{className:"badge",style:{background:cor+"18",color:cor,border:"1px solid "+cor+"30"}},lbl);}
+function KCard({icon,lbl,val,cor,sub}){return h("div",{className:"kcard",style:{borderLeft:"4px solid "+cor}},h("div",{style:{fontSize:20,marginBottom:4}},icon),h("div",{style:{fontSize:19,fontWeight:900,color:cor}},val),h("div",{style:{fontSize:11,color:"#64748b",marginTop:2}},lbl),sub&&h("div",{style:{fontSize:10,color:"#94a3b8"}},sub));}
+function Notif({n}){return n?h("div",{className:"notif",style:{background:n.t==="ok"?"#16a34a":"#dc2626"}},n.m):null;}
 
 // ── APP ───────────────────────────────────────────────────────────────────────
 function App(){
@@ -279,11 +278,11 @@ function App(){
   // #7 — tela de login sem senha padrão
   if(!user)return h("div",{className:"login-screen"},
     h("div",{style:{width:"100%",maxWidth:420,textAlign:"center"}},
-      h("div",{style:{marginBottom:20}},h("div",{style:{fontSize:44}},"🏛️"),h("div",{style:{fontSize:22,fontWeight:900,color:"#7eb8f7",letterSpacing:2}},"GPFI"),h("div",{style:{fontSize:11,color:"#4a6580",marginTop:4}},"Prefeitura de Santo André — Gratificação de Desempenho")),
-      h("div",{style:{background:"#162234",borderRadius:14,padding:24,border:"1px solid #243448"}},
+      h("div",{style:{marginBottom:20}},h("div",{style:{fontSize:44}},"🏛️"),h("div",{style:{fontSize:22,fontWeight:900,color:"#1d4ed8",letterSpacing:2}},"GPFI"),h("div",{style:{fontSize:11,color:"#64748b",marginTop:4}},"Prefeitura de Santo André — Gratificação de Desempenho")),
+      h("div",{style:{background:"#fff",borderRadius:14,padding:24,border:"1px solid #e2e8f0",boxShadow:"0 4px 24px #0000000f"}},
         h("div",{className:"field"},h("label",{className:"lbl"},"USUÁRIO"),h("select",{value:lf.email,onChange:e=>setLF(f=>({...f,email:e.target.value}))},h("option",{value:""},"Selecione..."),users.map(u=>h("option",{key:u.id,value:u.email},u.nome+" — "+u.cargo)))),
         h("div",{className:"field"},h("label",{className:"lbl"},"SENHA"),h("input",{type:"password",placeholder:"Senha",value:lf.pw,onChange:e=>setLF(f=>({...f,pw:e.target.value})),onKeyDown:e=>e.key==="Enter"&&doLogin()})),
-        le&&h("div",{style:{color:"#f87171",fontSize:12,marginBottom:10}},le),
+        le&&h("div",{style:{color:"#dc2626",fontSize:12,marginBottom:10}},le),
         h("button",{className:"btn",style:{width:"100%",padding:11},onClick:doLogin},"Entrar")
       )
     )
@@ -300,6 +299,8 @@ function App(){
     {id:"rel", icon:"📈",lbl:"Relatórios", roles:["admin","diretor","gerente","encarregado"]},
     {id:"hmi", icon:"🗂️",lbl:"Hist. Ind.",  roles:["admin","diretor","gerente","encarregado","colaborador"]},
     {id:"hmg", icon:"📂",lbl:"Hist. Geral", roles:["admin","diretor","gerente","encarregado"]},
+    {id:"htrf",icon:"📜",lbl:"Hist. Tarefas",roles:["admin","diretor","gerente","encarregado","colaborador"]},
+    {id:"senha",icon:"🔑",lbl:"Minha Senha", roles:["admin","diretor","gerente","encarregado","colaborador"]},
     {id:"usr", icon:"👥",lbl:"Usuários",   roles:["admin","diretor"]}, // #2
     {id:"cmp", icon:"📅",lbl:"Competência",roles:["admin","diretor"]}, // #2
   ].filter(n=>n.roles.includes(user.role));
@@ -326,6 +327,8 @@ function App(){
         tab==="rel" &&h(Rel,P),
         tab==="hmi" &&h(HistInd,P),
         tab==="hmg" &&h(HistGer,P),
+        tab==="htrf"&&h(HistTrf,P),
+        tab==="senha"&&h(AlterarSenha,P),
         tab==="usr" &&isAdmin&&h(Usr,P),
         tab==="cmp" &&isAdmin&&h(Comp,P),
       )
@@ -896,6 +899,97 @@ function HistGer({users,comps,mediaAptos,myCols}){
       h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"20px 12px",gap:20}},
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Diretor do Departamento de Tributos")),
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:40,fontWeight:700,fontSize:11}},"Secretário da Receita e Captação de Recursos"))
+      )
+    )
+  );
+}
+
+// ── HISTÓRICO DE TAREFAS (#2) ─────────────────────────────────────────────────
+function HistTrf({user,users,trfs,comps,myCols}){
+  const hist=Object.keys(comps).sort().reverse();
+  const cs=user.role==="colaborador"?[user]:myCols();
+  const[cS,setCS]=useState(hist[0]||"");
+  const[sid,setSid]=useState(user.role==="colaborador"?user.id:(cs[0]?cs[0].id:""));
+  const sel=cs.find(u=>u.id===sid)||cs[0];
+  const mine=trfs.filter(t=>t.uid===(sel?sel.id:"")&&t.comp===cS);
+
+  function imprimirPDF(){
+    const el=document.getElementById("htrf-print");if(!el)return;
+    const w=window.open("","_blank","width=900,height=700");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tarefas Históricas</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:5px 8px;font-size:11px}th{background:#dce6f1}</style></head><body>'+el.innerHTML+'</body></html>');
+    w.document.close();setTimeout(()=>{w.focus();w.print();},400);
+  }
+
+  if(!hist.length)return h("div",null,h("h2",{className:"ph"},"Histórico de Tarefas"),h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#64748b"}},"Nenhuma competência encerrada."));
+
+  const tot=mine.filter(t=>t.status==="ap_ger").reduce((s,t)=>s+t.pts,0);
+
+  return h("div",null,
+    h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},
+      h("h2",{className:"ph",style:{margin:0}},"Histórico de Tarefas"),
+      user.role!=="colaborador"&&h("select",{style:{maxWidth:240,fontSize:12},value:sid,onChange:e=>setSid(e.target.value)},cs.map(u=>h("option",{key:u.id,value:u.id},u.nome+" — "+u.unid))),
+      h("select",{style:{maxWidth:160,fontSize:12},value:cS,onChange:e=>setCS(e.target.value)},hist.map(c=>h("option",{key:c,value:c},fmtComp(c)))),
+      h("button",{className:"btns",style:{marginLeft:"auto"},onClick:imprimirPDF},"🖨️ PDF")
+    ),
+    sel&&cS&&h("div",{id:"htrf-print"},
+      h("div",{style:{background:"#dce6f1",padding:"10px 14px",marginBottom:8,borderRadius:6,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        h("div",null,h("b",{style:{color:"#1d4ed8"}},"RELATÓRIO DE TAREFAS — "+fmtComp(cS)),h("div",{style:{fontSize:11,color:"#475569",marginTop:2}},sel.nome+" • "+sel.mat+" • "+sel.unid)),
+        h("div",{style:{textAlign:"right"}},h("div",{style:{fontSize:11,color:"#475569"}},"Total Aprovado"),h("div",{style:{fontWeight:900,fontSize:18,color:"#1d4ed8"}},tot+" pts"))
+      ),
+      h("div",{className:"card"},h("div",{className:"tbl-wrap"},h("table",null,
+        h("thead",null,h("tr",null,["Data","Item","Descrição","Qtd","Pts","Status","Obs"].map(x=>h("th",{key:x},x)))),
+        h("tbody",null,
+          mine.length===0&&h("tr",null,h("td",{colSpan:7,style:{textAlign:"center",padding:16,color:"#64748b"}},"Nenhuma tarefa registrada nesta competência.")),
+          mine.map(t=>{const cat=CAT.find(c=>c.id===t.cid);return h("tr",{key:t.id},
+            h("td",{style:{whiteSpace:"nowrap"}},t.data),
+            h("td",{style:{fontWeight:700,color:"#1d4ed8"}},cat?cat.item:"—"),
+            h("td",{style:{fontSize:11}},t.desc),
+            h("td",{style:{textAlign:"center"}},t.qtd||1),
+            h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
+            h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
+            h("td",{style:{fontSize:11,color:"#64748b"}},t.obs||"—")
+          );})
+        )
+      )))
+    )
+  );
+}
+
+// ── ALTERAR SENHA (#3) ────────────────────────────────────────────────────────
+function AlterarSenha({user,setU,notify}){
+  const[form,setForm]=useState({atual:"",nova:"",conf:""});
+  const[sav,setSav]=useState(false);
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  async function salvar(){
+    if(!form.atual){notify("Informe a senha atual.","err");return;}
+    if(form.atual!==user.pw){notify("Senha atual incorreta.","err");return;}
+    if(form.nova.length<6){notify("A nova senha deve ter ao menos 6 caracteres.","err");return;}
+    if(form.nova!==form.conf){notify("Confirmação de senha não confere.","err");return;}
+    setSav(true);
+    try{
+      await sb("PATCH","usuarios","id=eq."+user.id,{pw:form.nova});
+      setU(p=>p.map(u=>u.id===user.id?{...u,pw:form.nova}:u));
+      // atualiza o usuário logado também
+      user.pw=form.nova;
+      setForm({atual:"",nova:"",conf:""});
+      notify("Senha alterada com sucesso!");
+    }catch(e){notify("Erro: "+e.message,"err");}
+    setSav(false);
+  }
+
+  return h("div",null,
+    h("h2",{className:"ph"},"Alterar Minha Senha"),
+    h("div",{className:"card",style:{maxWidth:420}},
+      h("div",{className:"card-head"},"🔑 Segurança da Conta"),
+      h("div",{style:{padding:20}},
+        h("div",{style:{padding:"10px 12px",background:"#eff6ff",borderRadius:7,marginBottom:16,fontSize:12,color:"#1e40af",border:"1px solid #bfdbfe"}},"👤 Usuário: ",h("b",null,user.nome)," • ",h("b",null,user.cargo)),
+        h("div",{className:"field"},h("label",{className:"lbl"},"Senha Atual"),h("input",{type:"password",placeholder:"Digite a senha atual",value:form.atual,onChange:e=>sf("atual",e.target.value)})),
+        h("div",{className:"field"},h("label",{className:"lbl"},"Nova Senha ",h("span",{style:{color:"#64748b",fontWeight:400}},"(mínimo 6 caracteres)")),h("input",{type:"password",placeholder:"Nova senha",value:form.nova,onChange:e=>sf("nova",e.target.value)})),
+        h("div",{className:"field"},h("label",{className:"lbl"},"Confirmar Nova Senha"),h("input",{type:"password",placeholder:"Repita a nova senha",value:form.conf,onChange:e=>sf("conf",e.target.value),onKeyDown:e=>e.key==="Enter"&&salvar()})),
+        form.nova&&form.conf&&form.nova!==form.conf&&h("div",{style:{color:"#dc2626",fontSize:12,marginBottom:8}},"⚠️ As senhas não coincidem."),
+        form.nova&&form.nova.length<6&&h("div",{style:{color:"#d97706",fontSize:12,marginBottom:8}},"⚠️ Mínimo de 6 caracteres."),
+        h("div",{className:"btn-row"},h("button",{className:"btn",onClick:salvar,disabled:sav},sav?"Salvando...":"💾 Alterar Senha"))
       )
     )
   );
