@@ -429,23 +429,87 @@ function Trfs({user,trfs,setT,comp,notify}){
 // ── VALIDAÇÃO ─────────────────────────────────────────────────────────────────
 function Val({user,trfs,setT,users,pends,notify}){
   const[obs,setObs]=useState({});
+  const[selCol,setSelCol]=useState("todos");
   const ps=pends();
   const uMap=Object.fromEntries(users.map(u=>[u.id,u]));
+
+  // lista de colaboradores com tarefas pendentes
+  const colsComPend=[...new Set(ps.map(t=>t.uid))].map(uid=>uMap[uid]).filter(Boolean);
+
+  const psFiltrados=selCol==="todos"?ps:ps.filter(t=>t.uid===selCol);
+
   async function acao(id,tipo){
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
     const body=tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:obs[id]||"Sem motivo."};
-    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
-    catch{notify("Erro.","err");}
+    try{
+      await sb("PATCH","tarefas","id=eq."+id,body);
+      setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns}));
+      notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");
+    }catch{notify("Erro.","err");}
   }
-  return h("div",null,h("h2",{className:"ph"},"Validação"),
-    ps.length===0&&h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#3a5168"}},"✅ Nenhuma pendência."),
-    ps.map(t=>{const col=uMap[t.uid],cat=CAT.find(c=>c.id===t.cid);return h("div",{key:t.id,className:"card",style:{padding:14,marginBottom:10}},
-      h("div",{style:{fontWeight:700,fontSize:13,marginBottom:6}},"Item "+(cat?cat.item:"—")+" — "+t.desc),
-      h("div",{style:{fontSize:12,color:"#4a6580",marginBottom:8}},h("b",{style:{color:"#e2e8f0"}},(col?col.nome:"—"))," • "+t.data+" • ",h("b",{style:{color:"#7eb8f7"}},t.pts+" pts")),
-      t.obs&&h("div",{style:{fontSize:11,color:"#7eb8f7",marginBottom:8}},"Obs: "+t.obs),
-      h("div",{className:"field"},h("input",{placeholder:"Observação...",value:obs[t.id]||"",onChange:e=>setObs(p=>({...p,[t.id]:e.target.value}))})),
-      h("div",{className:"btn-row"},h("button",{className:"btn",onClick:()=>acao(t.id,"ap")},"✓ Aprovar"),h("button",{className:"btnd",onClick:()=>acao(t.id,"rej")},"✗ Rejeitar"))
-    );})
+
+  // aprovar/rejeitar todas as tarefas do colaborador selecionado
+  async function acaoTodas(tipo){
+    if(psFiltrados.length===0)return;
+    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
+    let ok=0;
+    for(const t of psFiltrados){
+      const body=tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:"Rejeitado em lote."};
+      try{
+        await sb("PATCH","tarefas","id=eq."+t.id,body);
+        ok++;
+      }catch{}
+    }
+    setT(p=>p.map(t=>psFiltrados.find(x=>x.id===t.id)?{...t,status:ns}:t));
+    notify(ok+" tarefas "+(tipo==="ap"?"aprovadas":"rejeitadas")+"!",tipo==="ap"?"ok":"err");
+  }
+
+  return h("div",null,
+    h("h2",{className:"ph"},"Validação de Tarefas"),
+
+    // filtro por colaborador
+    h("div",{className:"card",style:{padding:"12px 16px",marginBottom:12}},
+      h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}},
+        h("div",{style:{flex:1,minWidth:200}},
+          h("label",{className:"lbl"},"Filtrar por Colaborador"),
+          h("select",{value:selCol,onChange:e=>setSelCol(e.target.value)},
+            h("option",{value:"todos"},"Todos ("+(ps.length)+" pendentes)"),
+            colsComPend.map(u=>h("option",{key:u.id,value:u.id},u.nome+" — "+ps.filter(t=>t.uid===u.id).length+" pendente(s)"))
+          )
+        ),
+        selCol!=="todos"&&h("div",{style:{display:"flex",gap:8,alignItems:"flex-end"}},
+          h("button",{className:"btn",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("ap")},"✓ Aprovar Todas"),
+          h("button",{className:"btnd",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("rej")},"✗ Rejeitar Todas")
+        )
+      )
+    ),
+
+    psFiltrados.length===0&&h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#64748b"}},
+      selCol==="todos"?"✅ Nenhuma pendência.":"✅ Nenhuma pendência para este colaborador."
+    ),
+
+    psFiltrados.map(t=>{
+      const col=uMap[t.uid],cat=CAT.find(c=>c.id===t.cid);
+      return h("div",{key:t.id,className:"card",style:{padding:14,marginBottom:10}},
+        h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:8}},
+          h("div",null,
+            h("div",{style:{fontWeight:700,fontSize:13,marginBottom:4}},"Item "+(cat?cat.item:"—")+" — "+t.desc),
+            h("div",{style:{fontSize:12,color:"#64748b"}},
+              h("b",{style:{color:"#1e293b"}},col?col.nome:"—"),
+              " • "+t.data+" • ",
+              h("b",{style:{color:"#1d4ed8"}},t.pts+(t.pts<0?" pts (estorno)":" pts")),
+              " • ",h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})
+            )
+          )
+        ),
+        t.obs&&h("div",{style:{fontSize:11,color:"#475569",marginBottom:8,padding:"6px 10px",background:"#f8fafc",borderRadius:6,border:"1px solid #e2e8f0"}},"📝 "+t.obs),
+        h("div",{style:{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
+          h("input",{placeholder:"Observação do validador...",style:{flex:1,minWidth:180,fontSize:12},value:obs[t.id]||"",onChange:e=>setObs(p=>({...p,[t.id]:e.target.value}))}),
+          h("button",{className:"btn",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"ap")},"✓ Aprovar"),
+          h("button",{className:"btnd",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"rej")},"✗ Rejeitar")
+        )
+      );
+    })
   );
 }
 
