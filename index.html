@@ -374,6 +374,8 @@ function App(){
 
   const np=pends().length;
   const isAdmin=user.role==="admin"||user.role==="diretor"; // #2
+  const np=pends().length;
+  const isAdmin=user.role==="admin"||user.role==="diretor";
   const NAV=[
     {id:"dash",icon:"📊",lbl:"Dashboard", roles:["admin","diretor","gerente","encarregado","colaborador"]},
     {id:"trf", icon:"✅",lbl:"Tarefas",    roles:["colaborador"]},
