@@ -385,7 +385,9 @@ function App(){
     {id:"hmg", icon:"📂",lbl:"Hist. Geral", roles:["admin","diretor","gerente","encarregado"]},
     {id:"htrf",icon:"📜",lbl:"Hist. Tarefas",roles:["admin","diretor","gerente","encarregado","colaborador"]},
     {id:"senha",icon:"🔑",lbl:"Minha Senha", roles:["admin","diretor","gerente","encarregado","colaborador"]},
-    {id:"master",icon:"⚙️",lbl:"Master",    roles:["admin"]},
+    {id:"master",icon:"⚙️",lbl:"Master",     roles:["admin"]},
+    {id:"usr",   icon:"👥",lbl:"Usuários",   roles:["admin","diretor"]},
+    {id:"cmp",   icon:"📅",lbl:"Competência",roles:["admin","diretor"]},
     {id:"cmp", icon:"📅",lbl:"Competência",roles:["admin","diretor"]}, // #2
   ].filter(n=>n.roles.includes(user.role));
 
