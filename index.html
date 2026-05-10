@@ -313,6 +313,10 @@ function App(){
   async function doLogin(){
     if(!lf.email.trim()||!lf.pw.trim()){setLE("Preencha o e-mail e a senha.");return;}
     if(!isSafe(lf.email)||!isSafe(lf.pw)){setLE("Entrada inválida.");return;}
+    // #3 — validar domínio
+    if(!lf.email.trim().toLowerCase().endsWith("@santoandre.sp.gov.br")){
+      setLE("Acesso permitido apenas para e-mails @santoandre.sp.gov.br.");return;
+    }
     setLogging(true);
     try{
       const u=users.find(x=>x.email.toLowerCase()===lf.email.trim().toLowerCase());
@@ -345,7 +349,7 @@ function App(){
       h("div",{style:{background:"#fff",borderRadius:14,padding:28,border:"1px solid #e2e8f0",boxShadow:"0 4px 24px #0000000f"}},
         h("div",{className:"field"},
           h("label",{className:"lbl"},"E-MAIL"),
-          h("input",{type:"email",placeholder:"seu.email@santoandre.sp.gov.br",value:lf.email,
+          h("input",{type:"email",placeholder:"nome@santoandre.sp.gov.br",value:lf.email,
             onChange:e=>setLF(f=>({...f,email:sanitize(e.target.value)})),
             onKeyDown:e=>e.key==="Enter"&&doLogin(),
             autoComplete:"username"})
@@ -362,7 +366,7 @@ function App(){
           logging?"Autenticando...":"Entrar"
         ),
         h("div",{style:{marginTop:14,padding:"8px 12px",background:"#f8fafc",borderRadius:7,fontSize:11,color:"#64748b",border:"1px solid #e2e8f0"}},
-          "🔒 Acesso restrito a servidores autorizados"
+          "🔒 Acesso restrito a servidores com e-mail ",h("b",null,"@santoandre.sp.gov.br")
         )
       )
     )
