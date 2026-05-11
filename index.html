@@ -184,6 +184,134 @@ function Bdg({lbl,cor}){return h("span",{className:"badge",style:{background:cor
 function KCard({icon,lbl,val,cor,sub}){return h("div",{className:"kcard",style:{borderLeft:"4px solid "+cor}},h("div",{style:{fontSize:20,marginBottom:4}},icon),h("div",{style:{fontSize:19,fontWeight:900,color:cor}},val),h("div",{style:{fontSize:11,color:"#64748b",marginTop:2}},lbl),sub&&h("div",{style:{fontSize:10,color:"#94a3b8"}},sub));}
 function Notif({n}){return n?h("div",{className:"notif",style:{background:n.t==="ok"?"#16a34a":"#dc2626"}},n.m):null;}
 
+// ── HEADER RIGHT ─────────────────────────────────────────────────────────────
+function HeaderRight({user,np,onLogout}){
+  const[showMenu,setShowMenu]=useState(false);
+  const[showNotif,setShowNotif]=useState(false);
+  const menuRef=React.useRef(null);
+  const notifRef=React.useRef(null);
+
+  // Fechar ao clicar fora
+  useEffect(()=>{
+    function handle(e){
+      if(menuRef.current&&!menuRef.current.contains(e.target))setShowMenu(false);
+      if(notifRef.current&&!notifRef.current.contains(e.target))setShowNotif(false);
+    }
+    document.addEventListener("mousedown",handle);
+    return()=>document.removeEventListener("mousedown",handle);
+  },[]);
+
+  // Iniciais do usuário para avatar
+  const initials=user.nome.split(" ").filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("");
+
+  // Cor do avatar baseada no role
+  const avatarCor={admin:"#ef4444",diretor:"#f97316",gerente:"#d97706",encarregado:"#3b82f6",colaborador:"#1d4ed8"}[user.role]||"#64748b";
+
+  // Notificações simuladas (pendências do usuário)
+  const notifs=[
+    np>0&&{id:1,icon:"🔍",msg:np+" tarefa(s) aguardando sua validação",time:"Agora",cor:"#f59e0b"},
+    {id:2,icon:"📋",msg:"Competência "+fmtComp((()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")})())+" em andamento",time:"Sistema",cor:"#1d4ed8"},
+  ].filter(Boolean);
+
+  return h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+
+    // ── SININHO ──
+    h("div",{ref:notifRef,style:{position:"relative"}},
+      h("button",{
+        onClick:()=>{setShowNotif(!showNotif);setShowMenu(false);},
+        style:{position:"relative",width:38,height:38,borderRadius:"50%",border:"1px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,transition:"background .15s"},
+        onMouseEnter:e=>e.currentTarget.style.background="#e0e7ff",
+        onMouseLeave:e=>e.currentTarget.style.background="#f8fafc",
+      },"🔔",
+        notifs.length>0&&h("span",{style:{position:"absolute",top:2,right:2,width:16,height:16,borderRadius:"50%",background:"#dc2626",color:"#fff",fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}},notifs.length)
+      ),
+
+      // Menu notificações
+      showNotif&&h("div",{style:{position:"absolute",top:46,right:0,width:300,background:"#fff",borderRadius:12,boxShadow:"0 8px 32px #00000018",border:"1px solid #e2e8f0",zIndex:999,overflow:"hidden"}},
+        h("div",{style:{padding:"12px 16px",borderBottom:"1px solid #f1f5f9",fontWeight:700,fontSize:13,color:"#1e293b",display:"flex",justifyContent:"space-between",alignItems:"center"}},
+          "Notificações",
+          h("span",{style:{fontSize:11,color:"#64748b",fontWeight:400}},notifs.length+" nova(s)")
+        ),
+        notifs.length===0
+          ?h("div",{style:{padding:20,textAlign:"center",color:"#94a3b8",fontSize:13}},"Nenhuma notificação")
+          :notifs.map(n=>h("div",{key:n.id,style:{padding:"12px 16px",borderBottom:"1px solid #f8fafc",display:"flex",gap:10,alignItems:"flex-start",cursor:"default"}},
+            h("div",{style:{width:36,height:36,borderRadius:8,background:n.cor+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}},n.icon),
+            h("div",{style:{flex:1}},
+              h("div",{style:{fontSize:12,color:"#1e293b",fontWeight:600,lineHeight:1.4}},n.msg),
+              h("div",{style:{fontSize:10,color:"#94a3b8",marginTop:3}},n.time)
+            )
+          )),
+        h("div",{style:{padding:"8px 16px",textAlign:"center",borderTop:"1px solid #f1f5f9"}},
+          h("span",{style:{fontSize:11,color:"#64748b",cursor:"default"}},"As notificações são atualizadas em tempo real")
+        )
+      )
+    ),
+
+    // ── AVATAR / PERFIL ──
+    h("div",{ref:menuRef,style:{position:"relative"}},
+      h("button",{
+        onClick:()=>{setShowMenu(!showMenu);setShowNotif(false);},
+        style:{display:"flex",alignItems:"center",gap:8,padding:"4px 8px 4px 4px",border:"1px solid #e2e8f0",borderRadius:999,background:"#f8fafc",cursor:"pointer",transition:"background .15s"},
+        onMouseEnter:e=>e.currentTarget.style.background="#eff6ff",
+        onMouseLeave:e=>e.currentTarget.style.background="#f8fafc",
+      },
+        // Avatar com iniciais
+        h("div",{style:{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,"+avatarCor+","+avatarCor+"aa)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,letterSpacing:.5,flexShrink:0}},initials),
+        h("div",{style:{textAlign:"left",display:"none",maxWidth:120}},
+          h("div",{style:{fontSize:12,fontWeight:700,color:"#1e293b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},user.nome.split(" ")[0]),
+          h("div",{style:{fontSize:10,color:"#64748b"}},ROLE_LBL[user.role]||user.role)
+        ),
+        h("span",{style:{fontSize:10,color:"#94a3b8"}},showMenu?"▲":"▼")
+      ),
+
+      // Menu flutuante
+      showMenu&&h("div",{style:{position:"absolute",top:46,right:0,width:240,background:"#fff",borderRadius:12,boxShadow:"0 8px 32px #00000018",border:"1px solid #e2e8f0",zIndex:999,overflow:"hidden"}},
+        // Cabeçalho do perfil
+        h("div",{style:{padding:"16px",borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}},
+          h("div",{style:{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,"+avatarCor+","+avatarCor+"aa)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:16,flexShrink:0}},initials),
+          h("div",{style:{flex:1,minWidth:0}},
+            h("div",{style:{fontWeight:700,fontSize:13,color:"#1e293b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},user.nome),
+            h("div",{style:{fontSize:11,color:"#64748b",marginTop:1}},user.cargo),
+            h("div",{style:{marginTop:4}},h(Bdg,{lbl:user.unid,cor:UNID_COR[user.unid]||"#64748b"}))
+          )
+        ),
+        // Itens do menu
+        h("div",{style:{padding:"6px 0"}},
+          h("div",{style:{padding:"8px 16px",fontSize:11,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}},"Conta"),
+          h("button",{
+            onClick:()=>{setShowMenu(false);},
+            style:{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:"#334155",textAlign:"left"},
+            onMouseEnter:e=>e.currentTarget.style.background="#f8fafc",
+            onMouseLeave:e=>e.currentTarget.style.background="transparent",
+          },h("span",{style:{fontSize:16}},"👤"),"Meu Perfil"),
+          h("button",{
+            onClick:()=>{setShowMenu(false);},
+            style:{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:"#334155",textAlign:"left"},
+            onMouseEnter:e=>e.currentTarget.style.background="#f8fafc",
+            onMouseLeave:e=>e.currentTarget.style.background="transparent",
+          },h("span",{style:{fontSize:16}},"🔑"),"Alterar Senha"),
+          h("div",{style:{height:1,background:"#f1f5f9",margin:"6px 0"}}),
+          // Informações
+          h("div",{style:{padding:"6px 16px 2px",fontSize:11,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}},"Sistema"),
+          h("div",{style:{padding:"6px 16px",fontSize:11,color:"#64748b",display:"flex",justifyContent:"space-between"}},
+            h("span",null,"Matrícula"),h("span",{style:{fontWeight:700,color:"#1e293b"}},user.mat||"—")
+          ),
+          h("div",{style:{padding:"6px 16px",fontSize:11,color:"#64748b",display:"flex",justifyContent:"space-between"}},
+            h("span",null,"Perfil"),h("span",{style:{fontWeight:700,color:"#1e293b"}},ROLE_LBL[user.role]||user.role)
+          ),
+          h("div",{style:{height:1,background:"#f1f5f9",margin:"6px 0"}}),
+          h("button",{
+            onClick:()=>{setShowMenu(false);onLogout();},
+            style:{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 16px",border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:"#dc2626",fontWeight:700,textAlign:"left"},
+            onMouseEnter:e=>e.currentTarget.style.background="#fef2f2",
+            onMouseLeave:e=>e.currentTarget.style.background="transparent",
+          },h("span",{style:{fontSize:16}},"🚪"),"Sair do sistema")
+        )
+      )
+    )
+  );
+}
+
 // ── APP ───────────────────────────────────────────────────────────────────────
 function App(){
   const[users,setU]=useState([]);
@@ -303,7 +431,7 @@ function App(){
         h("span",{style:{fontSize:20}},"🏛️"),
         h("div",null,h("div",{className:"hdr-title"},"GPFI — Gratificação"),h("div",{className:"hdr-sub"},"Santo André • "+fmtComp(comp)+" • "+user.nome.split(" ")[0]))
       ),
-      h("button",{className:"btns",style:{fontSize:12,padding:"6px 12px"},onClick:()=>{setUser(null);setLF({email:"",pw:""});}},"Sair")
+      h(HeaderRight,{user,np,onLogout:()=>{setUser(null);setLF({email:"",pw:""}); }})
     ),
     h("div",{className:"layout"},
       h("aside",{className:"sbar"},NAV.map(n=>h("button",{key:n.id,className:"sbar-btn"+(tab===n.id?" active":""),onClick:()=>setTab(n.id)},h("span",null,n.icon),n.lbl))),
