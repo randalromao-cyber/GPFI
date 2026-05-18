@@ -723,9 +723,13 @@ function Val({user,trfs,setT,users,pends,notify}){
     ),
     psFilt.length===0&&h("div",{className:"card",style:{padding:20,textAlign:"center",color:"#94a3b8"}},"✅ Nenhuma pendência."),
     psFilt.map(t=>{const col=uMap[t.uid],cat=CAT.find(c=>c.id===t.cid);return h("div",{key:t.id,className:"card",style:{padding:14,marginBottom:10}},
-      h("div",{style:{fontWeight:700,fontSize:13,marginBottom:4}},"Item "+(cat?cat.item:"—")+" — "+t.desc),
-      h("div",{style:{fontSize:12,color:"#64748b",marginBottom:8}},h("b",{style:{color:"#1e293b"}},col?col.nome:"—")," • "+t.data+" • ",h("b",{style:{color:"#1d4ed8"}},t.pts+" pts")," • ",h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-      t.obs&&h("div",{style:{fontSize:11,padding:"6px 10px",background:"#f8fafc",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8}},"📝 "+t.obs),
+      // #4 — item + descrição completa
+      h("div",{style:{marginBottom:6}},
+        h("span",{style:{fontWeight:900,color:"#1d4ed8",fontSize:13,marginRight:8}},"Item "+(cat?cat.item:"—")),
+        h("span",{style:{fontWeight:600,fontSize:13}},cat?cat.desc:t.desc)
+      ),
+      h("div",{style:{fontSize:12,marginBottom:8}},h("b",null,col?col.nome:"—")," • "+t.data+" • ",h("b",{style:{color:"#1d4ed8"}},t.pts+" pts")," • ",h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
+      t.obs&&h("div",{style:{fontSize:11,padding:"6px 10px",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8}},"📝 "+t.obs),
       h("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
         h("input",{placeholder:"Observação do validador...",style:{flex:1,minWidth:160,fontSize:12},value:obs[t.id]||"",onChange:e=>setObs(p=>({...p,[t.id]:e.target.value}))}),
         h("button",{className:"btn",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"ap")},"✓ Aprovar"),
@@ -777,7 +781,15 @@ function MapaInd({user,users,trfs,comp,getR,myCols,getExc}){
           h("thead",null,h("tr",null,["Item","Natureza do Serviço","Qtd","Pts/Un","Total","Data"].map(x=>h("th",{key:x},x)))),
           h("tbody",null,
             aprov.length===0&&h("tr",null,h("td",{colSpan:6,style:{textAlign:"center",padding:10,color:"#888"}},"Nenhuma aprovada.")),
-            aprov.map(t=>{const cat=CAT.find(c=>c.id===t.cid);return h("tr",{key:t.id},h("td",{style:{fontWeight:700,color:"#1d4ed8"}},cat?cat.item:"—"),h("td",null,t.desc),h("td",{style:{textAlign:"center"}},t.qtd||1),h("td",{style:{textAlign:"center"}},cat?cat.pts:0),h("td",{style:{textAlign:"center",fontWeight:700}},t.pts),h("td",null,t.data));}),
+            aprov.map(t=>{const cat=CAT.find(c=>c.id===t.cid);return h("tr",{key:t.id},
+              // #4 — item + descrição completa no mapa
+              h("td",{style:{fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}},cat?cat.item:"—"),
+              h("td",null,cat?cat.desc:t.desc),
+              h("td",{style:{textAlign:"center"}},t.qtd||1),
+              h("td",{style:{textAlign:"center"}},cat?cat.pts:0),
+              h("td",{style:{textAlign:"center",fontWeight:700}},t.pts),
+              h("td",{style:{whiteSpace:"nowrap"}},t.data)
+            );});
             h("tr",{style:{background:"#dce6f1",fontWeight:900}},h("td",{colSpan:4,style:{textAlign:"right"}},"TOTAL:"),h("td",{style:{textAlign:"center",fontSize:14}},ptB),h("td",null))
           )
         )
