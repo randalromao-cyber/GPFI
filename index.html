@@ -509,7 +509,7 @@ function App(){
 
   const NAV=[
     {id:"dash", icon:"📊",lbl:"Dashboard",    roles:["admin","diretor","gerente","encarregado","colaborador"]},
-    {id:"trf",  icon:"✅",lbl:"Tarefas",       roles:["colaborador"]},
+    {id:"trf",  icon:"✅",lbl:"Tarefas",       roles:["colaborador","encarregado","gerente","diretor","admin"]},
     {id:"val",  icon:"🔍",lbl:"Validação"+(np>0?" ("+np+")":""), roles:["encarregado","gerente"]},
     {id:"mi",   icon:"📋",lbl:"Mapa Ind.",     roles:["admin","diretor","gerente","encarregado","colaborador"]},
     {id:"mg",   icon:"📑",lbl:"Mapa Geral",    roles:["admin","diretor","gerente","encarregado"]},
@@ -538,7 +538,7 @@ function App(){
       h("aside",{className:"sbar"},NAV.map(n=>h("button",{key:n.id,className:"sbar-btn"+(tab===n.id?" active":""),onClick:()=>setTab(n.id)},h("span",null,n.icon),n.lbl))),
       h("main",{className:"main"},
         tab==="dash"  &&h(Dash,P),
-        tab==="trf"   &&user.role==="colaborador"&&h(Trfs,P),
+        tab==="trf"   &&h(Trfs,P),
         tab==="val"   &&(user.role==="encarregado"||user.role==="gerente")&&h(Val,P),
         tab==="mi"    &&h(MapaInd,P),
         tab==="mg"    &&h(MapaGer,P),
