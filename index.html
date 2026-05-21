@@ -598,17 +598,31 @@ function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
                 h("td",null,h("div",{style:{display:"flex",gap:4}},h("button",{className:"btn",style:{padding:"3px 8px",fontSize:11},onClick:()=>saveEdit(t.id)},"💾"),h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11},onClick:()=>setEditId(null)},"✕")))
               );
             }
-            return h("tr",{key:t.id,style:{opacity:t.status==="rej"?0.65:1}},
-              h("td",{style:{whiteSpace:"nowrap"}},t.data),
-              h("td",{style:{fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}},cat2?cat2.item:"—"),
-              h("td",{style:{fontSize:11,maxWidth:220}},cat2?cat2.desc:t.desc),
-              h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
-              h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-              h("td",{style:{fontSize:11,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},t.obs||"—"),
-              h("td",null,h("div",{style:{display:"flex",gap:4}},
-                t.status==="pend"&&t.uid===user.id&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11,color:"#dc2626"},onClick:()=>del(t.id)},"✕"),
-                isAdmin&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11},onClick:()=>{setEditId(t.id);setEditObs(t.obs||"");setEditStatus(t.status);}},"✏️")
-              ))
+            return h(Fragment,{key:t.id},
+              h("tr",{style:{opacity:t.status==="rej"?0.8:1}},
+                h("td",{style:{whiteSpace:"nowrap"}},t.data),
+                h("td",{style:{fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}},cat2?cat2.item:"—"),
+                h("td",{style:{fontSize:11,maxWidth:220}},cat2?cat2.desc:t.desc),
+                h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
+                h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
+                h("td",{style:{fontSize:11,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},t.obs||"—"),
+                h("td",null,h("div",{style:{display:"flex",gap:4}},
+                  t.status==="pend"&&t.uid===user.id&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11,color:"#dc2626"},onClick:()=>del(t.id)},"✕"),
+                  isAdmin&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11},onClick:()=>{setEditId(t.id);setEditObs(t.obs||"");setEditStatus(t.status);}},"✏️")
+                ))
+              ),
+              // Motivo de rejeição visível para o colaborador
+              t.status==="rej"&&t.motivoRej&&h("tr",{key:t.id+"-rej"},
+                h("td",{colSpan:7,style:{padding:"0 12px 10px",borderBottom:"1px solid #f1f5f9"}},
+                  h("div",{style:{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 12px",background:"#fef2f2",borderRadius:7,border:"1px solid #fecaca",fontSize:12}},
+                    h("span",{style:{fontSize:16,flexShrink:0}},"❌"),
+                    h("div",null,
+                      h("div",{style:{fontWeight:700,color:"#dc2626",marginBottom:2}},"Motivo da Rejeição:"),
+                      h("div",{style:{color:"#7f1d1d"}},t.motivoRej)
+                    )
+                  )
+                )
+              )
             );
           })
         )
