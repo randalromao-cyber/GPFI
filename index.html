@@ -254,7 +254,7 @@ function calcRes(base,exc){
 }
 function gpfi(ef,vb){return ef*vb*VPCT;}
 function toUser(r){return{id:r.id,nome:r.nome,mat:r.mat,email:r.email,cargo:r.cargo,role:r.role,unid:r.unid,vb:parseFloat(r.vb),pw:r.pw,ativo:r.ativo,sup_id:r.sup_id||null};}
-function toTrf(r){return{id:r.id,uid:r.user_id,comp:r.comp,cid:r.cat_id,desc:r.descricao,pts:r.pts,qtd:r.qtd,data:r.data,obs:r.obs,status:r.status,m2a:r.m2_atual,m2b:r.m2_nova,ft:r.fmp_tot,fv:r.fmp_val};}
+function toTrf(r){return{id:r.id,uid:r.user_id,comp:r.comp,cid:r.cat_id,desc:r.descricao,pts:r.pts,qtd:r.qtd,data:r.data,obs:r.obs,status:r.status,obsVal:r.obs_val,motivoRej:r.motivo_rej,m2a:r.m2_atual,m2b:r.m2_nova,ft:r.fmp_tot,fv:r.fmp_val};}
 
 // ── MINI COMPONENTS ───────────────────────────────────────────────────────────
 function Bdg({lbl,cor}){return h("span",{className:"badge",style:{background:cor+"18",color:cor,border:"1px solid "+cor+"30"}},lbl);}
@@ -620,6 +620,7 @@ function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
 // ── VALIDAÇÃO ─────────────────────────────────────────────────────────────────
 function Val({user,trfs,setT,users,pends,notify}){
   const[obs,setObs]=useState({});
+  const[obsTodas,setObsTodas]=useState("");
   const[selCol,setSelCol]=useState("todos");
   const ps=pends();
   const uMap=Object.fromEntries(users.map(u=>[u.id,u]));
@@ -628,16 +629,21 @@ function Val({user,trfs,setT,users,pends,notify}){
 
   async function acao(id,tipo){
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
-    const body=tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:obs[id]||"Sem motivo."};
-    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
+    const motivo=obs[id]||"";
+    if(tipo==="rej"&&!motivo.trim()){notify("Informe o motivo para rejeitar.","err");return;}
+    const body=tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo};
+    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns,obsVal:motivo}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
     catch{notify("Erro.","err");}
   }
   async function acaoTodas(tipo){
     if(!psFilt.length)return;
+    const motivo=obsTodas.trim();
+    if(tipo==="rej"&&!motivo){notify("Informe o motivo para rejeitar em lote.","err");return;}
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
-    for(const t of psFilt){try{await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns}:{status:"rej",motivo_rej:"Lote."});}catch{}}
+    for(const t of psFilt){try{await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo});}catch{}}
     setT(p=>p.map(t=>psFilt.find(x=>x.id===t.id)?{...t,status:ns}:t));
     notify(psFilt.length+" tarefas "+(tipo==="ap"?"aprovadas":"rejeitadas")+"!",tipo==="ap"?"ok":"err");
+    setObsTodas("");
   }
 
   return h("div",null,
@@ -652,8 +658,14 @@ function Val({user,trfs,setT,users,pends,notify}){
           )
         ),
         selCol!=="todos"&&h(Fragment,null,
-          h("button",{className:"btn",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("ap")},"✓ Aprovar Todas"),
-          h("button",{className:"btnd",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("rej")},"✗ Rejeitar Todas")
+          h("div",{className:"field",style:{marginTop:8}},
+            h("label",{className:"lbl"},"Motivo ",h("span",{style:{color:"#94a3b8",fontWeight:400}},"(obrigatório para rejeitar em lote)")),
+            h("input",{placeholder:"Informe o motivo (obrigatório ao rejeitar)...",value:obsTodas,onChange:e=>setObsTodas(e.target.value)})
+          ),
+          h("div",{style:{display:"flex",gap:8,marginTop:6}},
+            h("button",{className:"btn",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("ap")},"✓ Aprovar Todas"),
+            h("button",{className:"btnd",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("rej")},"✗ Rejeitar Todas")
+          )
         )
       )
     ),
@@ -664,9 +676,18 @@ function Val({user,trfs,setT,users,pends,notify}){
         h("span",{style:{fontWeight:600,fontSize:13}},cat?cat.desc:t.desc)
       ),
       h("div",{style:{fontSize:12,marginBottom:8}},h("b",null,col?col.nome:"—")," • "+t.data+" • ",h("b",{style:{color:"#1d4ed8"}},t.pts+" pts")," • ",h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-      t.obs&&h("div",{style:{fontSize:11,padding:"6px 10px",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8}},"📝 "+t.obs),
+      // obs do auditor
+      t.obs&&h("div",{style:{fontSize:11,padding:"6px 10px",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8}},"📝 Obs. Auditor: "+t.obs),
+      // campo motivo obrigatório
+      h("div",{className:"field"},
+        h("label",{className:"lbl"},"Motivo ",h("span",{style:{color:"#94a3b8",fontWeight:400}},"(obrigatório para rejeitar)")),
+        h("input",{
+          placeholder:"Informe o motivo (obrigatório ao rejeitar)...",
+          value:obs[t.id]||"",
+          onChange:e=>setObs(p=>({...p,[t.id]:e.target.value})),
+        })
+      ),
       h("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
-        h("input",{placeholder:"Observação do validador...",style:{flex:1,minWidth:160,fontSize:12},value:obs[t.id]||"",onChange:e=>setObs(p=>({...p,[t.id]:e.target.value}))}),
         h("button",{className:"btn",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"ap")},"✓ Aprovar"),
         h("button",{className:"btnd",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"rej")},"✗ Rejeitar")
       )
