@@ -155,8 +155,6 @@ async function sb(method,table,params,body){
   const hh={...HDR};
   if(method==="POST"||method==="PATCH")hh["Prefer"]="return=representation";
   if(method==="POST"&&params&&params.includes("on_conflict"))hh["Prefer"]="resolution=merge-duplicates,return=representation";
-  // Remove o limite padrão do Supabase (1000 registros)
-  if(method==="GET")hh["Range-Unit"]="items",hh["Range"]="0-9999";
   const r=await fetch(url,{method,headers:hh,...(body?{body:JSON.stringify(body)}:{})});
   if(!r.ok){const t=await r.text();throw new Error(r.status+": "+t);}
   if(method==="DELETE")return[];
@@ -360,7 +358,7 @@ function App(){
         const us=await sb("GET","usuarios","order=nome");
         if(Array.isArray(us))setU(us.map(toUser));
         setLmsg("Carregando tarefas...");
-        const ts=await sb("GET","tarefas","order=criado_em.desc&limit=5000");
+        const ts=await sb("GET","tarefas","order=criado_em.desc&limit=10000&offset=0");
         if(Array.isArray(ts))setT(ts.map(toTrf));
         setLmsg("Finalizando...");
         const[exs,cfg,cps]=await Promise.all([sb("GET","excedentes"),sb("GET","config","chave=eq.comp_ativa"),sb("GET","competencias")]);
@@ -1161,10 +1159,13 @@ function Usr({users,setU,notify}){
       gestores.map(g=>h("div",{key:g.id},renderUser(g),
         encs.filter(e=>e.unid===g.unid).map(e=>h("div",{key:e.id,style:{paddingLeft:20,borderLeft:"3px solid #e2e8f0",marginLeft:16}},
           renderUser(e),
-          colab.filter(c=>c.unid===e.unid&&c.sup_id===e.id).map(c=>h("div",{key:c.id,style:{paddingLeft:20,borderLeft:"3px solid #f1f5f9",marginLeft:16}},renderUser(c)))
-        ))
+          colab.filter(c=>c.sup_id===e.id).map(c=>h("div",{key:c.id,style:{paddingLeft:20,borderLeft:"3px solid #f1f5f9",marginLeft:16}},renderUser(c)))
+        )),
+        // colaboradores vinculados direto ao gerente (sem encarregado)
+        colab.filter(c=>c.sup_id===g.id).map(c=>h("div",{key:c.id,style:{paddingLeft:20,borderLeft:"3px solid #f1f5f9",marginLeft:16}},renderUser(c)))
       ))
     ),
+    // colaboradores sem encarregado E sem gerente como superior
     colab.filter(c=>!encs.find(e=>e.id===c.sup_id)&&!gestores.find(g=>g.id===c.sup_id)).length>0&&h("div",null,
       h("div",{style:{fontSize:11,fontWeight:700,color:"#94a3b8",margin:"10px 0 6px",textTransform:"uppercase",letterSpacing:1}},"Sem Superior Definido"),
       colab.filter(c=>!encs.find(e=>e.id===c.sup_id)&&!gestores.find(g=>g.id===c.sup_id)).map(renderUser)
