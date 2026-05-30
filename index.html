@@ -358,7 +358,7 @@ function App(){
         const us=await sb("GET","usuarios","order=nome");
         if(Array.isArray(us))setU(us.map(toUser));
         setLmsg("Carregando tarefas...");
-        const ts=await sb("GET","tarefas","order=criado_em.desc");
+        const ts=await sb("GET","tarefas","order=criado_em.desc&limit=5000");
         if(Array.isArray(ts))setT(ts.map(toTrf));
         setLmsg("Finalizando...");
         const[exs,cfg,cps]=await Promise.all([sb("GET","excedentes"),sb("GET","config","chave=eq.comp_ativa"),sb("GET","competencias")]);
