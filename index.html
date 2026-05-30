@@ -155,6 +155,8 @@ async function sb(method,table,params,body){
   const hh={...HDR};
   if(method==="POST"||method==="PATCH")hh["Prefer"]="return=representation";
   if(method==="POST"&&params&&params.includes("on_conflict"))hh["Prefer"]="resolution=merge-duplicates,return=representation";
+  // Remove o limite padrão do Supabase (1000 registros)
+  if(method==="GET")hh["Range-Unit"]="items",hh["Range"]="0-9999";
   const r=await fetch(url,{method,headers:hh,...(body?{body:JSON.stringify(body)}:{})});
   if(!r.ok){const t=await r.text();throw new Error(r.status+": "+t);}
   if(method==="DELETE")return[];
