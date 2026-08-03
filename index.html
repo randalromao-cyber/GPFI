@@ -168,7 +168,7 @@ function isSafe(v){return typeof v!=="string"||!SQL_PAT.test(v);}
 async function hashSenha(s){const e=new TextEncoder().encode(s);const b=await crypto.subtle.digest("SHA-256",e);return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("");}
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
-const VB=7512.03,VPCT=0.000333,MINP=1000,MAXP=3000,MAXE=1000;
+const VB=7887.63,VPCT=0.000333,MINP=1000,MAXP=3000,MAXE=1000;
 const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const UNID_COR={GFI:"#1d4ed8",GFM:"#7c3aed",GCF:"#059669",GATIF:"#d97706",DAC:"#0891b2",GA:"#be185d",GAT:"#0d9488",DT:"#dc2626",ADMIN:"#64748b"};
 const ROLE_LBL={admin:"Admin",diretor:"Diretor",gerente:"Gerente",encarregado:"Encarregado",colaborador:"Auditor"};
