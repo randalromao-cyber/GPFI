@@ -499,7 +499,7 @@ function Dash({user,comp,getR,mediaAptos,myCols}){
 
 // ── TAREFAS ───────────────────────────────────────────────────────────────────
 function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
-  const F0={cid:"",qtd:"1",data:new Date().toISOString().slice(0,10),obs:"",m2a:"",m2b:"",ft:"",fv:"",estorno:""};
+  const F0={cid:"",qtd:"1",data:new Date().toISOString().slice(0,10),nproc:"",interessado:"",assunto:"",tarefaExec:"",m2a:"",m2b:"",ft:"",fv:"",estorno:""};
   const[show,setShow]=useState(false);
   const[form,setForm]=useState(F0);
   const[sav,setSav]=useState(false);
@@ -517,14 +517,26 @@ function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
   const mine=trfs.filter(t=>t.uid===uidAtivo&&t.comp===comp);
   const uMap=Object.fromEntries(users.map(u=>[u.id,u]));
 
+  // Monta o texto de observação (armazenado na coluna "obs" já existente)
+  // a partir dos 4 campos legíveis do formulário.
+  function montarObs(f){
+    return "Nº Processo: "+f.nproc.trim()+"\n"+
+           "Interessado: "+f.interessado.trim()+"\n"+
+           "Assunto do Processo: "+f.assunto.trim()+"\n"+
+           "Tarefa Executada: "+f.tarefaExec.trim();
+  }
+
   async function add(){
     if(!form.cid){notify("Selecione um item.","err");return;}
-    if(!form.obs.trim()){notify("Observação é obrigatória.","err");return;}
+    if(!form.nproc.trim()){notify("Informe o nº do processo.","err");return;}
+    if(!form.interessado.trim()){notify("Informe o interessado.","err");return;}
+    if(!form.assunto.trim()){notify("Informe o assunto do processo.","err");return;}
+    if(!form.tarefaExec.trim()){notify("Descreva a tarefa executada.","err");return;}
     if(pts===0&&cat.esp!=="estorno"){notify("Pontuação zero.","err");return;}
     if(!uidAtivo){notify("Selecione um colaborador.","err");return;}
     setSav(true);
     try{
-      const row={id:"t"+Date.now(),user_id:uidAtivo,comp,cat_id:form.cid,descricao:cat.item+" – "+cat.desc,pts,qtd:parseInt(form.qtd)||1,data:form.data,obs:form.obs,status:"pend",m2_atual:form.m2a||null,m2_nova:form.m2b||null,fmp_tot:form.ft||null,fmp_val:form.fv||null};
+      const row={id:"t"+Date.now(),user_id:uidAtivo,comp,cat_id:form.cid,descricao:cat.item+" – "+cat.desc,pts,qtd:parseInt(form.qtd)||1,data:form.data,obs:montarObs(form),status:"pend",m2_atual:form.m2a||null,m2_nova:form.m2b||null,fmp_tot:form.ft||null,fmp_val:form.fv||null};
       const saved=await sb("POST","tarefas","",row);
       const t=Array.isArray(saved)?saved[0]:saved;
       setT(p=>[toTrf(t),...p]);setForm(F0);setShow(false);notify("Tarefa registrada!");
@@ -566,7 +578,15 @@ function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
         cat&&cat.esp==="estorno"&&h("div",{className:"field"},h("label",{className:"lbl"},"Pontos a Estornar"),h("input",{type:"number",min:"1",value:form.estorno,onChange:e=>sf("estorno",e.target.value),placeholder:"Ex: 300"})),
         cat&&h(Fragment,null,
           h("div",{className:"field"},h("label",{className:"lbl"},"Data"),h("input",{type:"date",value:form.data,onChange:e=>sf("data",e.target.value)})),
-          h("div",{className:"field"},h("label",{className:"lbl"},"Observação ",h("span",{style:{color:"#dc2626"}},"*")),h("textarea",{value:form.obs,onChange:e=>sf("obs",e.target.value),placeholder:"Preenchimento obrigatório..."})),
+          h("div",{style:{border:"1px solid #e2e8f0",borderRadius:9,padding:12,marginBottom:10,background:"#f8fafc0d"}},
+            h("div",{style:{fontSize:11,fontWeight:800,color:"#1d4ed8",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}},"Dados do Processo"),
+            h("div",{className:"g2"},
+              h("div",{className:"field"},h("label",{className:"lbl"},"Nº Processo ",h("span",{style:{color:"#dc2626"}},"*")),h("input",{value:form.nproc,onChange:e=>sf("nproc",e.target.value),placeholder:"Ex: 12345/2026"})),
+              h("div",{className:"field"},h("label",{className:"lbl"},"Interessado ",h("span",{style:{color:"#dc2626"}},"*")),h("input",{value:form.interessado,onChange:e=>sf("interessado",e.target.value),placeholder:"Nome do contribuinte/interessado"}))
+            ),
+            h("div",{className:"field"},h("label",{className:"lbl"},"Assunto do Processo ",h("span",{style:{color:"#dc2626"}},"*")),h("input",{value:form.assunto,onChange:e=>sf("assunto",e.target.value),placeholder:"Ex: Impugnação de lançamento de IPTU"})),
+            h("div",{className:"field",style:{marginBottom:0}},h("label",{className:"lbl"},"Tarefa Executada Específica ",h("span",{style:{color:"#dc2626"}},"*")),h("textarea",{value:form.tarefaExec,onChange:e=>sf("tarefaExec",e.target.value),placeholder:"Descreva especificamente o que foi executado..."}))
+          ),
           pts!==0&&h("div",{style:{padding:"8px 10px",borderRadius:7,display:"flex",justifyContent:"space-between",marginBottom:10,border:"1px solid #e2e8f0"}},h("span",{style:{fontSize:12}},"Item "+cat.item),h("span",{style:{color:pts<0?"#dc2626":"#16a34a",fontWeight:900}},pts<0?"Estorno: "+pts+" pts":"Total: "+pts+" pts"))
         ),
         h("div",{className:"btn-row"},h("button",{className:"btn",onClick:add,disabled:sav},sav?"Salvando...":"Salvar"),h("button",{className:"btns",onClick:()=>{setShow(false);setForm(F0);}},"Cancelar"))
@@ -594,7 +614,7 @@ function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
                 h("td",{style:{fontSize:11}},cat2?cat2.desc:t.desc),
                 h("td",{style:{fontWeight:700}},t.pts),
                 h("td",null,h("select",{value:editStatus,onChange:e=>setEditStatus(e.target.value),style:{fontSize:11,padding:"2px 4px"}},["pend","ap_enc","ap_ger","rej"].map(s=>h("option",{key:s,value:s},SLBL[s])))),
-                h("td",null,h("input",{value:editObs,onChange:e=>setEditObs(e.target.value),style:{fontSize:11,padding:"2px 6px"}})),
+                h("td",null,h("textarea",{value:editObs,onChange:e=>setEditObs(e.target.value),style:{fontSize:11,padding:"4px 6px",minHeight:64,whiteSpace:"pre-wrap"}})),
                 h("td",null,h("div",{style:{display:"flex",gap:4}},h("button",{className:"btn",style:{padding:"3px 8px",fontSize:11},onClick:()=>saveEdit(t.id)},"💾"),h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11},onClick:()=>setEditId(null)},"✕")))
               );
             }
@@ -605,7 +625,7 @@ function Trfs({user,users,trfs,setT,comp,notify,isAdmin,myCols}){
                 h("td",{style:{fontSize:11,maxWidth:220}},cat2?cat2.desc:t.desc),
                 h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
                 h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-                h("td",{style:{fontSize:11,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},t.obs||"—"),
+                h("td",{title:t.obs||"",style:{fontSize:11,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},t.obs||"—"),
                 h("td",null,h("div",{style:{display:"flex",gap:4}},
                   t.status==="pend"&&t.uid===user.id&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11,color:"#dc2626"},onClick:()=>del(t.id)},"✕"),
                   isAdmin&&h("button",{className:"btns",style:{padding:"3px 8px",fontSize:11},onClick:()=>{setEditId(t.id);setEditObs(t.obs||"");setEditStatus(t.status);}},"✏️")
@@ -690,8 +710,8 @@ function Val({user,trfs,setT,users,pends,notify}){
         h("span",{style:{fontWeight:600,fontSize:13}},cat?cat.desc:t.desc)
       ),
       h("div",{style:{fontSize:12,marginBottom:8}},h("b",null,col?col.nome:"—")," • "+t.data+" • ",h("b",{style:{color:"#1d4ed8"}},t.pts+" pts")," • ",h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-      // obs do auditor
-      t.obs&&h("div",{style:{fontSize:11,padding:"6px 10px",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8}},"📝 Obs. Auditor: "+t.obs),
+      // obs do auditor (dados do processo), formatada de forma legível
+      t.obs&&h("div",{style:{fontSize:11,padding:"8px 10px",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8,whiteSpace:"pre-line",lineHeight:1.6}},"📝 "+t.obs),
       // campo motivo obrigatório
       h("div",{className:"field"},
         h("label",{className:"lbl"},"Motivo ",h("span",{style:{color:"#94a3b8",fontWeight:400}},"(obrigatório para rejeitar)")),
@@ -1013,7 +1033,7 @@ function HistTrf({user,trfs,comps,myCols}){
             h("td",{style:{fontSize:11}},cat?cat.desc:t.desc),
             h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
             h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-            h("td",{style:{fontSize:11}},t.obs||"—")
+            h("td",{title:t.obs||"",style:{fontSize:11,whiteSpace:"pre-line"}},t.obs||"—")
           );})
         )
       )))
