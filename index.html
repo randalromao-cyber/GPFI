@@ -500,7 +500,7 @@ function Dash({user,comp,getR,mediaAptos,myCols}){
 
 // ── TAREFAS ───────────────────────────────────────────────────────────────────
 function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
-  const PROC0={nproc:"",interessado:"",assunto:"",data:new Date().toISOString().slice(0,10)};
+  const PROC0={nproc:"",classFiscal:"",interessado:"",assunto:"",data:new Date().toISOString().slice(0,10)};
   const ITEM0={cid:"",qtd:"1",tarefaExec:"",m2a:"",m2b:"",ft:"",fv:"",estorno:""};
   const[show,setShow]=useState(false);
   const[proc,setProc]=useState(PROC0);
@@ -527,6 +527,7 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
   // a partir dos dados do processo (comuns) + tarefa executada específica do item.
   function montarObs(item){
     return "Nº Processo: "+proc.nproc.trim()+"\n"+
+           "Classificação Fiscal: "+proc.classFiscal.trim()+"\n"+
            "Interessado: "+proc.interessado.trim()+"\n"+
            "Assunto do Processo: "+proc.assunto.trim()+"\n"+
            "Tarefa Executada: "+item.tarefaExec.trim();
@@ -589,8 +590,9 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
         // ── Dados do processo (comuns a todos os itens lançados abaixo) ──
         h("div",{style:{border:"1px solid #e2e8f0",borderRadius:9,padding:12,marginBottom:14}},
           h("div",{style:{fontSize:11,fontWeight:800,color:"#1d4ed8",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}},"Dados do Processo"),
-          h("div",{className:"g2"},
+          h("div",{className:"g3"},
             h("div",{className:"field"},h("label",{className:"lbl"},"Nº Processo ",h("span",{style:{color:"#dc2626"}},"*")),h("input",{value:proc.nproc,onChange:e=>sp("nproc",e.target.value),placeholder:"Ex: 12345/2026"})),
+            h("div",{className:"field"},h("label",{className:"lbl"},"Classificação Fiscal"),h("input",{value:proc.classFiscal,onChange:e=>sp("classFiscal",e.target.value),placeholder:"Ex: ISSQN"})),
             h("div",{className:"field"},h("label",{className:"lbl"},"Interessado ",h("span",{style:{color:"#dc2626"}},"*")),h("input",{value:proc.interessado,onChange:e=>sp("interessado",e.target.value),placeholder:"Nome do contribuinte/interessado"}))
           ),
           h("div",{className:"g2"},
