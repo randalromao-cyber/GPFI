@@ -414,6 +414,422 @@ function App(){
         h("div",{className:"field"},h("label",{className:"lbl"},"E-MAIL"),h("input",{type:"email",placeholder:"nome@santoandre.sp.gov.br",value:lf.email,onChange:e=>setLF(f=>({...f,email:sanitize(e.target.value)})),onKeyDown:e=>e.key==="Enter"&&doLogin(),autoComplete:"username"})),
         h("div",{className:"field"},h("label",{className:"lbl"},"SENHA"),h("input",{type:"password",placeholder:"••••••••",value:lf.pw,onChange:e=>setLF(f=>({...f,pw:e.target.value})),onKeyDown:e=>e.key==="Enter"&&doLogin(),autoComplete:"current-password"})),
         le&&h("div",{style:{color:"#dc2626",fontSize:12,marginBottom:10,padding:"6px 10px",background:"#fef2f2",borderRadius:6}},le),
+        h("button",{className:"btn",style:{width:"100%",padding:11},onClick:doLogin,disabled:logging},logging?"Autenticando...":"Entrar"),<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GPFI — Prefeitura de Santo André</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;transition:background .2s,color .2s}
+
+/* TEMA CLARO */
+body.light{background:#f0f4f8;color:#1e293b}
+body.light .hdr{background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 1px 4px #0000000d}
+body.light .hdr-title{color:#1d4ed8}
+body.light .hdr-sub{color:#64748b}
+body.light .sbar{background:#fff;border-right:1px solid #e2e8f0}
+body.light .sbar-btn{color:#64748b}
+body.light .sbar-btn.active{background:#eff6ff;color:#1d4ed8;border-left:3px solid #2563eb}
+body.light .sbar-btn:hover:not(.active){color:#334155;background:#f8fafc}
+body.light .bnav{background:#fff;border-top:1px solid #e2e8f0}
+body.light .bnav-btn{color:#64748b}
+body.light .bnav-btn.active{color:#1d4ed8}
+body.light .kcard{background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 4px #0000000a}
+body.light .card{background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 4px #0000000a}
+body.light .card-head{background:#f8fafc;border-bottom:1px solid #e2e8f0;color:#1d4ed8}
+body.light th{color:#64748b;background:#f8fafc;border-bottom:2px solid #e2e8f0}
+body.light td{color:#334155;border-bottom:1px solid #f1f5f9}
+body.light label.lbl{color:#64748b}
+body.light input,body.light select,body.light textarea{background:#fff;border:1px solid #cbd5e1;color:#1e293b}
+body.light input:focus,body.light select:focus,body.light textarea:focus{border-color:#2563eb;box-shadow:0 0 0 3px #2563eb18}
+body.light .btns{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0}
+body.light .btns:hover{background:#e2e8f0}
+body.light h2.ph{color:#1e293b}
+body.light .load-screen{background:#f0f4f8}
+body.light .login-screen{background:linear-gradient(135deg,#e0e7ff,#f0f4f8,#dbeafe)}
+body.light .float-menu{background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 32px #00000018}
+body.light .float-menu-item{color:#334155}
+body.light .float-menu-item:hover{background:#f8fafc}
+body.light .float-menu-item.danger{color:#dc2626}
+body.light .float-menu-item.danger:hover{background:#fef2f2}
+body.light .float-sep{background:#f1f5f9}
+body.light .bell-btn{background:#f8fafc;border:1px solid #e2e8f0}
+body.light .bell-btn:hover{background:#e0e7ff}
+body.light .avatar-btn{background:#f8fafc;border:1px solid #e2e8f0}
+body.light .avatar-btn:hover{background:#eff6ff}
+body.light ::-webkit-scrollbar-track{background:#e2e8f0}
+body.light ::-webkit-scrollbar-thumb{background:#94a3b8}
+
+/* TEMA ESCURO */
+body.dark{background:#0f172a;color:#e2e8f0}
+body.dark .hdr{background:#1e293b;border-bottom:1px solid #334155;box-shadow:0 1px 4px #00000040}
+body.dark .hdr-title{color:#60a5fa}
+body.dark .hdr-sub{color:#475569}
+body.dark .sbar{background:#1e293b;border-right:1px solid #334155}
+body.dark .sbar-btn{color:#64748b}
+body.dark .sbar-btn.active{background:#1d4ed820;color:#60a5fa;border-left:3px solid #3b82f6}
+body.dark .sbar-btn:hover:not(.active){color:#94a3b8;background:#ffffff08}
+body.dark .bnav{background:#1e293b;border-top:1px solid #334155}
+body.dark .bnav-btn{color:#64748b}
+body.dark .bnav-btn.active{color:#60a5fa}
+body.dark .kcard{background:#1e293b;border:1px solid #334155}
+body.dark .card{background:#1e293b;border:1px solid #334155}
+body.dark .card-head{background:#0f172a;border-bottom:1px solid #334155;color:#60a5fa}
+body.dark th{color:#475569;background:#0f172a;border-bottom:2px solid #334155}
+body.dark td{color:#94a3b8;border-bottom:1px solid #1e293b}
+body.dark label.lbl{color:#64748b}
+body.dark input,body.dark select,body.dark textarea{background:#0f172a;border:1px solid #334155;color:#e2e8f0}
+body.dark input:focus,body.dark select:focus,body.dark textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #3b82f620}
+body.dark .btns{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+body.dark .btns:hover{background:#334155}
+body.dark h2.ph{color:#e2e8f0}
+body.dark .load-screen{background:#0f172a}
+body.dark .login-screen{background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a)}
+body.dark .float-menu{background:#1e293b;border:1px solid #334155;box-shadow:0 8px 32px #00000040}
+body.dark .float-menu-item{color:#94a3b8}
+body.dark .float-menu-item:hover{background:#0f172a}
+body.dark .float-menu-item.danger{color:#f87171}
+body.dark .float-menu-item.danger:hover{background:#1a0000}
+body.dark .float-sep{background:#334155}
+body.dark .bell-btn{background:#1e293b;border:1px solid #334155}
+body.dark .bell-btn:hover{background:#1d4ed820}
+body.dark .avatar-btn{background:#1e293b;border:1px solid #334155}
+body.dark .avatar-btn:hover{background:#1d4ed820}
+body.dark ::-webkit-scrollbar-track{background:#0f172a}
+body.dark ::-webkit-scrollbar-thumb{background:#334155}
+
+/* COMUNS */
+::-webkit-scrollbar{width:6px;height:6px}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.hdr{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100}
+.layout{display:flex;flex:1;min-height:0}
+.sbar{width:190px;flex-shrink:0;display:flex;flex-direction:column;padding:8px 0;overflow-y:auto}
+.sbar-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;cursor:pointer;font-size:12px;text-align:left;background:transparent;border-left:3px solid transparent;transition:all .15s}
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;overflow-x:auto;white-space:nowrap}
+.bnav-btn{display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:8px 10px;border:none;background:transparent;font-size:9px;cursor:pointer;min-width:54px}
+.bnav-btn span{font-size:16px}
+.main{flex:1;padding:20px;overflow-y:auto;max-height:calc(100vh - 56px)}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+.kcard{border-radius:10px;padding:16px}
+.card{border-radius:10px;overflow:hidden;margin-bottom:14px}
+.card-head{padding:10px 16px;font-weight:700;font-size:13px}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:8px 12px;text-align:left;font-weight:700;font-size:11px;white-space:nowrap}
+td{padding:8px 12px;vertical-align:middle}
+.field{margin-bottom:10px}
+label.lbl{font-size:11px;font-weight:700;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:7px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+textarea{resize:vertical;min-height:52px}
+.btn{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer}
+.btns{padding:9px 16px;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;transition:background .15s}
+.btnd{padding:9px 16px;border-radius:7px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:800;font-size:13px;border:none;cursor:pointer}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.notif-toast{position:fixed;top:14px;right:14px;z-index:9999;padding:10px 18px;border-radius:8px;color:#fff;font-weight:700;font-size:13px;box-shadow:0 4px 20px #0009;max-width:calc(100vw - 28px)}
+h2.ph{font-weight:900;font-size:17px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.spinner{width:36px;height:36px;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mapa{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:12px}
+.mapa table{font-size:11px;width:100%;border-collapse:collapse}
+.mapa th,.mapa td{border:1px solid #aaa;padding:4px 7px}
+.mapa th{background:#dce6f1}
+.load-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.float-menu{position:absolute;border-radius:12px;z-index:999;overflow:hidden}
+.float-menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;text-align:left;transition:background .12s}
+.float-sep{height:1px;margin:6px 0}
+@media(max-width:640px){
+  .sbar{display:none}.bnav{display:block}
+  .main{padding:12px 10px;padding-bottom:80px}
+  .g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}
+  h2.ph{font-size:15px}
+  .btn,.btns,.btnd{font-size:12px;padding:8px 12px}
+  table{font-size:11px}th,td{padding:6px 8px}
+}
+@media(max-width:400px){.kgrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+document.body.className=localStorage.getItem("gpfi_theme")==="dark"?"dark":"light";
+const {createElement:h,useState,useEffect,useCallback,Fragment}=React;
+
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SB_URL="https://laelsnqvajpbhmaeshoa.supabase.co/rest/v1";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhZWxzbnF2YWpwYmhtYWVzaG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MDI0OTQsImV4cCI6MjA5MjM3ODQ5NH0.voyevlz2pywjM9pZFpj_AgwJhrsGSNTg4092GfBHn4o";
+const HDR={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Accept":"application/json"};
+async function sb(method,table,params,body){
+  const url=SB_URL+"/"+table+(params?"?"+params:"");
+  const hh={...HDR};
+  if(method==="POST"||method==="PATCH")hh["Prefer"]="return=representation";
+  if(method==="POST"&&params&&params.includes("on_conflict"))hh["Prefer"]="resolution=merge-duplicates,return=representation";
+  const r=await fetch(url,{method,headers:hh,...(body?{body:JSON.stringify(body)}:{})});
+  if(!r.ok){const t=await r.text();throw new Error(r.status+": "+t);}
+  if(method==="DELETE")return[];
+  const txt=await r.text();return txt?JSON.parse(txt):[];
+}
+
+// ── SEGURANÇA ─────────────────────────────────────────────────────────────────
+function sanitize(s){if(typeof s!=="string")return s;return s.replace(/[<>"'`]/g,c=>({"<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","`":"&#x60;"}[c]));}
+const SQL_PAT=/(\b(select|insert|update|delete|drop|truncate|alter|exec|union)\b.*[=<>]|--|;|\/\*|\*\/)/i;
+function isSafe(v){return typeof v!=="string"||!SQL_PAT.test(v);}
+async function hashSenha(s){const e=new TextEncoder().encode(s);const b=await crypto.subtle.digest("SHA-256",e);return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("");}
+
+// ── CONSTANTES ────────────────────────────────────────────────────────────────
+const VB=7887.63,VPCT=0.000333,MINP=1000,MAXP=3000,MAXE=1000;
+const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const UNID_COR={GFI:"#1d4ed8",GFM:"#7c3aed",GCF:"#059669",GATIF:"#d97706",DAC:"#0891b2",GA:"#be185d",GAT:"#0d9488",DT:"#dc2626",ADMIN:"#64748b"};
+const ROLE_LBL={admin:"Admin",diretor:"Diretor",gerente:"Gerente",encarregado:"Encarregado",colaborador:"Auditor"};
+const SCOR={pend:"#f59e0b",ap_enc:"#3b82f6",ap_ger:"#10b981",rej:"#ef4444"};
+const SLBL={pend:"Aguard. Encarregado",ap_enc:"Aguard. Gerente",ap_ger:"Aprovado ✓",rej:"Rejeitado"};
+const UNIDS=["GFI","GFM","GCF","GATIF","DAC","GA","GAT","DT","ADMIN"];
+const COM_QTD=["c31","c41","c42","c44","c45","c49","c50"];
+
+const CAT=[
+  {id:"c01",item:"1",   pts:300,desc:"Informações tributárias fundamentadas, pertinentes a mandado de segurança, às ações judiciais em geral, com prazo em andamento – por expediente."},
+  {id:"c02",item:"2.1", pts:120,desc:"Serviço fiscal básico cumprido, por contribuinte – até 01 exercício social fiscalizado."},
+  {id:"c03",item:"2.2", pts:140,desc:"Serviço fiscal básico cumprido, por contribuinte – até 02 exercícios sociais fiscalizados."},
+  {id:"c04",item:"2.3", pts:170,desc:"Serviço fiscal básico cumprido, por contribuinte – até 03 exercícios sociais fiscalizados."},
+  {id:"c05",item:"2.4", pts:200,desc:"Serviço fiscal básico cumprido, por contribuinte – até 04 exercícios sociais fiscalizados ou mais."},
+  {id:"c06",item:"3.1", pts:10, desc:"Verificação de documentos que fazem parte integrante de levantamento – livros contábeis em geral, por exercício social."},
+  {id:"c07",item:"3.2", pts:20, desc:"Verificação de documentos que fazem parte integrante de levantamento – relatórios em geral."},
+  {id:"c08",item:"3.3", pts:2,  desc:"Verificação de documentos que fazem parte integrante de levantamento – memorandos."},
+  {id:"c09",item:"3.4", pts:5,  desc:"Verificação de documentos que fazem parte integrante de levantamento – contratos verificados na fiscalização."},
+  {id:"c10",item:"4.1", pts:130,desc:"Arbitramento / Estimativa – arbitramento pelo não atendimento e notificação fundamentada – por exercício."},
+  {id:"c11",item:"4.2", pts:145,desc:"Arbitramento / Estimativa – arbitramento com documentos apresentados sem condições de conclusão – por exercício."},
+  {id:"c12",item:"4.3", pts:150,desc:"Arbitramento / Estimativa – cálculo por estimativa por contribuinte."},
+  {id:"c13",item:"5",   pts:20, desc:"Diligências, por contribuinte (não cumulativo com os itens 2, 4 e 11)."},
+  {id:"c14",item:"6.1", pts:10, desc:"Autorização através de processos ou requerimentos – inscrição, alteração, cancelamento de contribuintes, exigidos pela legislação tributária."},
+  {id:"c15",item:"6.2", pts:10, desc:"Autorização através de processos ou requerimentos – enquadramento de atividade, por contribuinte."},
+  {id:"c16",item:"7.1", pts:20, desc:"Por documentos emitidos – notificação / intimação."},
+  {id:"c17",item:"7.2", pts:20, desc:"Por documentos emitidos – termo de apreensão de documentos e outros."},
+  {id:"c18",item:"7.3", pts:20, desc:"Por documentos emitidos – auto de infração."},
+  {id:"c19",item:"8.1", pts:200,desc:"Manifestação definitiva sobre matéria tributária em processos e outros expedientes, por manifestação – 1ª instância (reclamações) – processos instruídos com pesquisa de doutrina, jurisprudência e legislação pertinente."},
+  {id:"c20",item:"8.2", pts:100,desc:"Manifestação definitiva sobre matéria tributária em processos e outros expedientes, por manifestação – 1ª instância (reclamações) – processos instruídos apenas com fundamentação legal desta municipalidade."},
+  {id:"c21",item:"9.1", pts:250,desc:"Informações ou propostas fundamentadas sobre matéria tributária – por processo ou expediente – para fins de consulta de assuntos jurídico-tributários."},
+  {id:"c22",item:"9.2", pts:100,desc:"Informações ou propostas fundamentadas sobre matéria tributária – por processo ou expediente – para fins de consulta referente à imunidade e/ou isenção."},
+  {id:"c23",item:"9.3", pts:60, desc:"Informações ou propostas fundamentadas sobre matéria tributária – por processo ou expediente – para fins de concessão de Regime Especial."},
+  {id:"c24",item:"9.4", pts:20, desc:"Pontuação adicional na defesa ou recurso, quando o auto de infração tiver sido lavrado por outro auditor fiscal, por auto de infração."},
+  {id:"c25",item:"10.1",pts:150,desc:"Fiscalização especial interna ou de diligências externas, por dia – diurna (jornada integral com prejuízo das demais funções)."},
+  {id:"c26",item:"10.2",pts:75, desc:"Fiscalização especial interna ou de diligências externas, por dia – por dia, em período inferior ao previsto no item 10.1."},
+  {id:"c27",item:"10.3",pts:195,desc:"Fiscalização especial interna ou de diligências externas, por dia – noturna, em dia de jornada normal (não cumulativo com o item 10.1)."},
+  {id:"c28",item:"10.4",pts:300,desc:"Fiscalização especial interna ou de diligências externas – fiscalização em feriados ou finais de semana."},
+  {id:"c29",item:"11.1",pts:150,desc:"Conferência de Declaração para Índice de Participação dos Municípios na arrecadação do ICMS (DIPAM) – interno ou de diligências externas – por dia (jornada integral)."},
+  {id:"c30",item:"11.2",pts:75, desc:"Conferência de Declaração para Índice de Participação dos Municípios na arrecadação do ICMS (DIPAM) – por dia, em período inferior ao previsto no item 11.1."},
+  {id:"c31",item:"12.1",pts:20, desc:"Emissão e cancelamento de documentos, por processo administrativo e por unidade – Demonstrativo de Recolhimento (emissão de guia/carnê)."},
+  {id:"c32",item:"13.1",pts:50, desc:"Verificação e/ou análise – documentos das empresas (subempreitada) utilizadas na construção civil, por empresa."},
+  {id:"c33",item:"13.2",pts:15, desc:"Verificação e/ou análise – levantamento fiscal de construção civil no caso de mão-de-obra própria, por processo."},
+  {id:"c34",item:"14",  pts:75, desc:"Participações em comissões ou grupos de trabalho, sem prejuízo das funções, por dia."},
+  {id:"c35",item:"15",  pts:150,desc:"Participações em comissões ou grupos de trabalho, com prejuízo das funções, por dia."},
+  {id:"c36",item:"16.1",pts:150,desc:"Por cumprimento da escala e plantão fiscal normal ou por convocação, na repartição fiscal, desde que cumprido o plantão integralmente – por dia (jornada integral)."},
+  {id:"c37",item:"16.2",pts:75, desc:"Por cumprimento da escala e plantão fiscal normal ou por convocação, na repartição fiscal – por dia, em período inferior ao previsto no item 16.1."},
+  {id:"c38",item:"17",  pts:300,desc:"Elaboração de parecer técnico-científico, sobre matéria tributária, por expressa determinação superior, por parecer."},
+  {id:"c39",item:"18",  pts:50, desc:"Monitoramento dos tomadores / prestadores de serviços no cumprimento das obrigações principal e acessória, por empresa."},
+  {id:"c40",item:"19",  pts:20, desc:"Inclusão / alteração / exclusão de dados cadastrais de contribuinte nos sistemas tributário, por processo administrativo e por contribuinte."},
+  {id:"c41",item:"20.1",pts:20, desc:"Fiscalização ativa (vistoria) para atualização cadastral imobiliária – com atualização de dados de proprietário / contribuinte responsável (por unidade autônoma)."},
+  {id:"c42",item:"20.2",pts:30, desc:"Fiscalização ativa (vistoria) para atualização cadastral imobiliária – com atualização de Tipo / Padrão Construtivo (por unidade autônoma)."},
+  {id:"c43",item:"20.3",pts:15, desc:"Fiscalização ativa (vistoria) para atualização cadastral imobiliária – com atualização de Área Construída (por m²).",esp:"m2"},
+  {id:"c44",item:"21.1",pts:20, desc:"Vistoria motivada por processo administrativo e/ou eletrônico – com atualização de dados de proprietário / contribuinte responsável (por unidade autônoma)."},
+  {id:"c45",item:"21.2",pts:30, desc:"Vistoria motivada por processo administrativo e/ou eletrônico – com atualização de Tipo / Padrão Construtivo (por unidade autônoma)."},
+  {id:"c46",item:"21.3",pts:15, desc:"Vistoria motivada por processo administrativo e/ou eletrônico – com atualização de Área Construída (por m²).",esp:"m2"},
+  {id:"c47",item:"21.4",pts:25, desc:"Vistoria motivada por processo administrativo e/ou eletrônico – com confirmação dos dados cadastrais existentes (por unidade autônoma)."},
+  {id:"c48",item:"22.1",pts:20, desc:"Pontuação por despacho / ficha resultante de análise de tributos imobiliários – quando versem sobre inscrições, alterações ou cancelamento de dados do Cadastro Imobiliário Fiscal."},
+  {id:"c49",item:"22.2",pts:20, desc:"Registro Desdobro ou Englobamento Fiscal com elaboração, criação e conferência do cadastro das unidades (por unidade)."},
+  {id:"c50",item:"22.3",pts:40, desc:"Preenchimento dos dados avaliativos de Desdobro ou Englobamento (por empreendimento)."},
+  {id:"c51",item:"22.4",pts:40, desc:"Identificação do sujeito passivo do IPTU por processo, de ofício."},
+  {id:"c52",item:"23.1",pts:1,  desc:"Notificação de Lançamento de ISSCC pela Pauta Fiscal – emissão de Notificação de lançamento do ISSCC, a cada 50 FMP's lançados de Imposto Sobre Serviços da Construção Civil.",esp:"fmp"},
+  {id:"c53",item:"24",  pts:10, desc:"Confecção / atualização de Ficha de Lançamento ou informações nos sistemas informatizados da PMSA (Observações)."},
+  {id:"c54",item:"25",  pts:150,desc:"Pesquisa de Valores Imobiliários por unidade autônoma, com dados fundamentados (obtidos em campo, jornais, imobiliárias, relatórios de guias de ITBI), etc."},
+  {id:"c55",item:"26",  pts:0,  desc:"Estorno em dobro, lavratura indevida ou injustificada de autos de infração, intimações, notificações ou lançamentos com vício.",esp:"estorno"},
+];
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function getComp(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function fmtComp(c){const[y,m]=c.split("-");return MESES[+m-1]+"/"+y;}
+function fmtBRL(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
+function genId(){return"u_"+Math.random().toString(36).slice(2,8);}
+function calcPts(cid,f){
+  const c=CAT.find(x=>x.id===cid);if(!c)return 0;
+  if(c.esp==="estorno")return-(parseInt(f.estorno)||0);
+  if(c.esp==="m2"){const d=(parseFloat(f.m2b)||0)-(parseFloat(f.m2a)||0);return d>0?Math.round(d*c.pts):0;}
+  if(c.esp==="fmp"){const t=parseFloat(f.ft)||0,v=parseFloat(f.fv)||0;return v?Math.floor((t/v)/50)*c.pts:0;}
+  return c.pts*(parseInt(f.qtd)||1);
+}
+function calcRes(base,exc){
+  const total=base+exc;
+  if(total<MINP)return{total,ef:0,exc:0};
+  return{total,ef:Math.min(total,MAXP),exc:Math.min(Math.max(total-MAXP,0),MAXE)};
+}
+function gpfi(ef,vb){return ef*vb*VPCT;}
+function toUser(r){return{id:r.id,nome:r.nome,mat:r.mat,email:r.email,cargo:r.cargo,role:r.role,unid:r.unid,vb:parseFloat(r.vb),pw:r.pw,ativo:r.ativo,sup_id:r.sup_id||null};}
+function toTrf(r){return{id:r.id,uid:r.user_id,comp:r.comp,cid:r.cat_id,desc:r.descricao,pts:r.pts,qtd:r.qtd,data:r.data,obs:r.obs,status:r.status,obsVal:r.obs_val,motivoRej:r.motivo_rej,m2a:r.m2_atual,m2b:r.m2_nova,ft:r.fmp_tot,fv:r.fmp_val};}
+
+// ── MINI COMPONENTS ───────────────────────────────────────────────────────────
+function Bdg({lbl,cor}){return h("span",{className:"badge",style:{background:cor+"18",color:cor,border:"1px solid "+cor+"30"}},lbl);}
+function KCard({icon,lbl,val,cor,sub}){return h("div",{className:"kcard",style:{borderLeft:"4px solid "+cor}},h("div",{style:{fontSize:20,marginBottom:4}},icon),h("div",{style:{fontSize:19,fontWeight:900,color:cor}},val),h("div",{style:{fontSize:11,color:"#64748b",marginTop:2}},lbl),sub&&h("div",{style:{fontSize:10,color:"#94a3b8"}},sub));}
+function Notif({n}){return n?h("div",{className:"notif-toast",style:{background:n.t==="ok"?"#16a34a":"#dc2626"}},n.m):null;}
+
+// ── HEADER RIGHT ─────────────────────────────────────────────────────────────
+function HeaderRight({user,np,dark,setDark,onLogout}){
+  const[showMenu,setShowMenu]=useState(false);
+  const[showNotif,setShowNotif]=useState(false);
+  const menuRef=React.useRef(null);
+  const notifRef=React.useRef(null);
+  useEffect(()=>{
+    function handle(e){
+      if(menuRef.current&&!menuRef.current.contains(e.target))setShowMenu(false);
+      if(notifRef.current&&!notifRef.current.contains(e.target))setShowNotif(false);
+    }
+    document.addEventListener("mousedown",handle);
+    return()=>document.removeEventListener("mousedown",handle);
+  },[]);
+  const initials=user.nome.split(" ").filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("");
+  const avatarCor={admin:"#ef4444",diretor:"#f97316",gerente:"#d97706",encarregado:"#3b82f6",colaborador:"#1d4ed8"}[user.role]||"#64748b";
+  const notifs=[
+    np>0&&{id:1,icon:"🔍",msg:np+" tarefa(s) aguardando validação",time:"Agora",cor:"#f59e0b"},
+    {id:2,icon:"📋",msg:"Competência "+fmtComp(getComp())+" em andamento",time:"Sistema",cor:"#1d4ed8"},
+  ].filter(Boolean);
+
+  return h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+    // Botão tema
+    h("button",{onClick:()=>setDark(d=>!d),title:dark?"Tema claro":"Tema escuro",className:"bell-btn",style:{width:38,height:38,borderRadius:"50%",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,border:"none"}},dark?"☀️":"🌙"),
+
+    // Sininho
+    h("div",{ref:notifRef,style:{position:"relative"}},
+      h("button",{onClick:()=>{setShowNotif(!showNotif);setShowMenu(false);},className:"bell-btn",style:{position:"relative",width:38,height:38,borderRadius:"50%",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,border:"none"}},
+        "🔔",
+        notifs.length>0&&h("span",{style:{position:"absolute",top:2,right:2,width:16,height:16,borderRadius:"50%",background:"#dc2626",color:"#fff",fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}},notifs.length)
+      ),
+      showNotif&&h("div",{className:"float-menu",style:{top:46,right:0,width:300}},
+        h("div",{style:{padding:"12px 16px",fontWeight:700,fontSize:13,display:"flex",justifyContent:"space-between"}},"Notificações",h("span",{style:{fontSize:11,fontWeight:400}},notifs.length+" nova(s)")),
+        notifs.map(n=>h("div",{key:n.id,style:{padding:"10px 16px",display:"flex",gap:10,alignItems:"flex-start",cursor:"default"}},
+          h("div",{style:{width:34,height:34,borderRadius:8,background:n.cor+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}},n.icon),
+          h("div",{style:{flex:1}},h("div",{style:{fontSize:12,fontWeight:600,lineHeight:1.4}},n.msg),h("div",{style:{fontSize:10,color:"#94a3b8",marginTop:2}},n.time))
+        )),
+        h("div",{style:{padding:"8px 16px",textAlign:"center",fontSize:11,color:"#94a3b8"}})
+      )
+    ),
+
+    // Avatar / Menu perfil
+    h("div",{ref:menuRef,style:{position:"relative"}},
+      h("button",{onClick:()=>{setShowMenu(!showMenu);setShowNotif(false);},className:"avatar-btn",style:{display:"flex",alignItems:"center",gap:8,padding:"4px 8px 4px 4px",borderRadius:999,cursor:"pointer",border:"none"}},
+        h("div",{style:{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,"+avatarCor+","+avatarCor+"aa)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,flexShrink:0}},initials),
+        h("span",{style:{fontSize:10,color:"#94a3b8"}},showMenu?"▲":"▼")
+      ),
+      showMenu&&h("div",{className:"float-menu",style:{top:46,right:0,width:240}},
+        h("div",{style:{padding:"16px",display:"flex",gap:12,alignItems:"center"}},
+          h("div",{style:{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,"+avatarCor+","+avatarCor+"aa)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:16,flexShrink:0}},initials),
+          h("div",{style:{flex:1,minWidth:0}},
+            h("div",{style:{fontWeight:700,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},user.nome),
+            h("div",{style:{fontSize:11,color:"#64748b",marginTop:1}},user.cargo),
+            h("div",{style:{marginTop:4}},h(Bdg,{lbl:user.unid,cor:UNID_COR[user.unid]||"#64748b"}))
+          )
+        ),
+        h("div",{className:"float-sep"}),
+        h("div",{style:{padding:"4px 0"}},
+          h("div",{style:{padding:"4px 16px 2px",fontSize:10,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}},"Info"),
+          h("div",{style:{padding:"5px 16px",fontSize:11,display:"flex",justifyContent:"space-between"}},h("span",{style:{color:"#94a3b8"}},"Matrícula"),h("span",{style:{fontWeight:700}},user.mat||"—")),
+          h("div",{style:{padding:"5px 16px",fontSize:11,display:"flex",justifyContent:"space-between"}},h("span",{style:{color:"#94a3b8"}},"Perfil"),h("span",{style:{fontWeight:700}},ROLE_LBL[user.role]||user.role))
+        ),
+        h("div",{className:"float-sep"}),
+        h("button",{className:"float-menu-item danger",onClick:()=>{setShowMenu(false);onLogout();}},h("span",{style:{fontSize:16}},"🚪"),"Sair do sistema")
+      )
+    )
+  );
+}
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App(){
+  const[users,setU]=useState([]);
+  const[trfs,setT]=useState([]);
+  const[exc,setE]=useState({});
+  const[comps,setC]=useState({});
+  const[comp,setComp]=useState(getComp());
+  const[user,setUser]=useState(null);
+  const[tab,setTab]=useState("dash");
+  const[lf,setLF]=useState({email:"",pw:""});
+  const[le,setLE]=useState("");
+  const[load,setLoad]=useState(true);
+  const[lmsg,setLmsg]=useState("Conectando...");
+  const[notif,setN]=useState(null);
+  const[logging,setLogging]=useState(false);
+  const[dark,setDark]=useState(()=>localStorage.getItem("gpfi_theme")==="dark");
+
+  useEffect(()=>{document.body.className=dark?"dark":"light";localStorage.setItem("gpfi_theme",dark?"dark":"light");},[dark]);
+
+  const notify=(m,t="ok")=>{setN({m,t});setTimeout(()=>setN(null),3000);};
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        setLmsg("Carregando usuários...");
+        const us=await sb("GET","usuarios","order=nome");
+        if(Array.isArray(us))setU(us.map(toUser));
+        setLmsg("Carregando tarefas...");
+        const ts=await sb("GET","tarefas","order=criado_em.desc&limit=10000&offset=0");
+        if(Array.isArray(ts))setT(ts.map(toTrf));
+        setLmsg("Finalizando...");
+        const[exs,cfg,cps]=await Promise.all([sb("GET","excedentes"),sb("GET","config","chave=eq.comp_ativa"),sb("GET","competencias")]);
+        if(Array.isArray(exs)){const em={};exs.forEach(e=>{em[e.user_id+"_"+e.comp]=e.valor;});setE(em);}
+        if(Array.isArray(cfg)&&cfg.length)setComp(cfg[0].valor);
+        if(Array.isArray(cps)){const cm={};cps.forEach(c=>{if(!cm[c.comp])cm[c.comp]={};cm[c.comp][c.user_id]={ef:c.efetivos,exc:c.excedente,total:c.total};});setC(cm);}
+      }catch(e){alert("Erro ao conectar: "+e.message);}
+      setLoad(false);
+    })();
+  },[]);
+
+  const getBase=useCallback((uid,c)=>trfs.filter(t=>t.uid===uid&&t.comp===c&&t.status==="ap_ger").reduce((s,t)=>s+t.pts,0),[trfs]);
+  const getExc=useCallback((uid,c)=>exc[uid+"_"+c]||0,[exc]);
+  const getR=useCallback((uid,c)=>calcRes(getBase(uid,c),getExc(uid,c)),[getBase,getExc]);
+  const cols=useCallback(()=>users.filter(u=>u.role==="colaborador"&&u.ativo),[users]);
+  const mediaAptos=useCallback((c)=>{const a=cols().filter(u=>getR(u.id,c).ef>=MINP);return a.length?Math.round(a.reduce((s,u)=>s+getR(u.id,c).ef,0)/a.length):0;},[cols,getR]);
+  const myCols=useCallback(()=>{
+    if(!user)return[];
+    if(user.role==="admin"||user.role==="diretor")return cols();
+    if(user.role==="gerente"||user.role==="encarregado")return users.filter(u=>u.role==="colaborador"&&u.unid===user.unid&&u.ativo);
+    return[];
+  },[user,users,cols]);
+  const pends=useCallback(()=>{
+    if(!user)return[];
+    if(user.role==="encarregado")return trfs.filter(t=>{const u=users.find(x=>x.id===t.uid);return u&&u.unid===user.unid&&t.status==="pend"&&u.sup_id===user.id;});
+    if(user.role==="gerente")return trfs.filter(t=>{const u=users.find(x=>x.id===t.uid);return u&&u.unid===user.unid&&(t.status==="pend"||t.status==="ap_enc");});
+    return[];
+  },[user,trfs,users]);
+
+  async function doLogin(){
+    if(!lf.email.trim()||!lf.pw.trim()){setLE("Preencha o e-mail e a senha.");return;}
+    if(!lf.email.trim().toLowerCase().endsWith("@santoandre.sp.gov.br")){setLE("Acesso permitido apenas para @santoandre.sp.gov.br.");return;}
+    if(!isSafe(lf.email)||!isSafe(lf.pw)){setLE("Entrada inválida.");return;}
+    setLogging(true);
+    try{
+      const u=users.find(x=>x.email.toLowerCase()===lf.email.trim().toLowerCase());
+      if(!u){setLE("Usuário não encontrado.");setLogging(false);return;}
+      const hashed=await hashSenha(lf.pw);
+      const ok=(u.pw===hashed||u.pw===lf.pw);
+      if(!ok){setLE("Senha incorreta.");setLogging(false);return;}
+      if(u.pw===lf.pw&&u.pw!==hashed){await sb("PATCH","usuarios","id=eq."+u.id,{pw:hashed});setU(p=>p.map(x=>x.id===u.id?{...x,pw:hashed}:x));u.pw=hashed;}
+      setUser(u);setLE("");setTab("dash");
+    }catch(e){setLE("Erro ao autenticar.");}
+    setLogging(false);
+  }
+
+  if(load)return h("div",{className:"load-screen"},h("div",{className:"spinner",style:{width:48,height:48,border:"3px solid #334155",borderTopColor:"#3b82f6"}}),h("span",{style:{color:"#64748b",fontSize:14}},lmsg));
+
+  if(!user)return h("div",{className:"login-screen"},
+    h("div",{style:{width:"100%",maxWidth:420,textAlign:"center"}},
+      h("div",{style:{marginBottom:20}},h("div",{style:{fontSize:44}},"🏛️"),h("div",{style:{fontSize:22,fontWeight:900,color:"#1d4ed8",letterSpacing:2}},"GPFI"),h("div",{style:{fontSize:11,color:"#64748b",marginTop:4}},"Prefeitura de Santo André — Gratificação de Desempenho")),
+      h("div",{style:{borderRadius:14,padding:28,border:"1px solid #e2e8f0",boxShadow:"0 4px 24px #0000000f",background:dark?"#1e293b":"#fff"}},
+        h("div",{className:"field"},h("label",{className:"lbl"},"E-MAIL"),h("input",{type:"email",placeholder:"nome@santoandre.sp.gov.br",value:lf.email,onChange:e=>setLF(f=>({...f,email:sanitize(e.target.value)})),onKeyDown:e=>e.key==="Enter"&&doLogin(),autoComplete:"username"})),
+        h("div",{className:"field"},h("label",{className:"lbl"},"SENHA"),h("input",{type:"password",placeholder:"••••••••",value:lf.pw,onChange:e=>setLF(f=>({...f,pw:e.target.value})),onKeyDown:e=>e.key==="Enter"&&doLogin(),autoComplete:"current-password"})),
+        le&&h("div",{style:{color:"#dc2626",fontSize:12,marginBottom:10,padding:"6px 10px",background:"#fef2f2",borderRadius:6}},le),
         h("button",{className:"btn",style:{width:"100%",padding:11},onClick:doLogin,disabled:logging},logging?"Autenticando...":"Entrar"),
         h("div",{style:{marginTop:12,padding:"8px 12px",borderRadius:7,fontSize:11,color:"#64748b",textAlign:"center"}},"🔒 Acesso restrito — ",h("b",null,"@santoandre.sp.gov.br"))
       )
@@ -507,6 +923,7 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
   const[itemForm,setItemForm]=useState(ITEM0);
   const[itens,setItens]=useState([]); // itens acumulados para o mesmo processo, antes de salvar
   const[sav,setSav]=useState(false);
+  const[declarou,setDeclarou]=useState(false);
   const isColaborador=user.role==="colaborador";
   const[selUid,setSelUid]=useState(isColaborador?user.id:"");
   const[editId,setEditId]=useState(null);
@@ -548,6 +965,7 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
     if(!proc.assunto.trim()){notify("Informe o assunto do processo.","err");return;}
     if(itens.length===0){notify("Adicione ao menos um item à lista.","err");return;}
     if(!uidAtivo){notify("Selecione um colaborador.","err");return;}
+    if(!declarou){notify("Confirme a declaração de veracidade das informações.","err");return;}
     setSav(true);
     try{
       const rows=itens.map((item,idx)=>({
@@ -560,7 +978,7 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
       const lista=Array.isArray(saved)?saved:[saved];
       setT(p=>[...lista.map(toTrf),...p]);
       notify(lista.length+" tarefa(s) registrada(s) — total "+totalItens+" pts!");
-      setProc(PROC0);setItens([]);setItemForm(ITEM0);setShow(false);
+      setProc(PROC0);setItens([]);setItemForm(ITEM0);setDeclarou(false);setShow(false);
     }catch(e){notify("Erro: "+e.message,"err");}
     setSav(false);
   }
@@ -634,9 +1052,13 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
             h("tfoot",null,h("tr",{style:{fontWeight:900,background:"#f8fafc"}},h("td",{colSpan:3,style:{textAlign:"right"}},"TOTAL:"),h("td",{style:{color:totalItens<0?"#dc2626":"#16a34a"}},totalItens+" pts"),h("td",null)))
           ))
         ),
+        h("label",{style:{display:"flex",alignItems:"flex-start",gap:8,padding:"10px 12px",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,marginBottom:12,cursor:"pointer",fontSize:12,lineHeight:1.5}},
+          h("input",{type:"checkbox",checked:declarou,onChange:e=>setDeclarou(e.target.checked),style:{width:16,height:16,marginTop:1,flexShrink:0}}),
+          h("span",{style:{color:"#92400e",fontWeight:600}},"Declaro, sob as penas da lei, que é de minha inteira responsabilidade a veracidade das informações prestadas.")
+        ),
         h("div",{className:"btn-row"},
-          h("button",{className:"btn",onClick:salvarTudo,disabled:sav||itens.length===0},sav?"Salvando...":"Salvar Tudo ("+itens.length+" item(ns) — "+totalItens+" pts)"),
-          h("button",{className:"btns",onClick:()=>{setShow(false);setProc(PROC0);setItemForm(ITEM0);setItens([]);}},"Cancelar")
+          h("button",{className:"btn",onClick:salvarTudo,disabled:sav||itens.length===0||!declarou},sav?"Salvando...":"Salvar Tudo ("+itens.length+" item(ns) — "+totalItens+" pts)"),
+          h("button",{className:"btns",onClick:()=>{setShow(false);setProc(PROC0);setItemForm(ITEM0);setItens([]);setDeclarou(false);}},"Cancelar")
         )
       )
     ),
@@ -841,6 +1263,7 @@ function MapaInd({user,users,trfs,comp,getR,myCols,getExc}){
         )),
         h("div",{style:{marginTop:8,padding:"5px 8px",background:res.ef>=MINP?"#dcfce7":"#fef9c3",borderRadius:4,fontWeight:700,fontSize:11,color:res.ef>=MINP?"#166534":"#92400e"}},res.ef>=MINP?"✅ GPFI HABILITADO":"⚠️ GPFI NÃO HABILITADO")
       ),
+      h("div",{style:{padding:"10px 12px",fontSize:10,color:"#444",lineHeight:1.5,borderBottom:"1px solid #aaa"}},"Declaro, sob as penas da lei, que é de minha inteira responsabilidade a veracidade das informações prestadas."),
       h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"18px 12px",gap:16}},
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Ciente — "+sel.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+sel.mat))),
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Superior Imediato"))
@@ -975,6 +1398,7 @@ function HistInd({user,comps,myCols,getExc}){
         )),
         h("div",{style:{marginTop:8,padding:"5px 8px",background:dados.ef>=MINP?"#dcfce7":"#fef9c3",borderRadius:4,fontWeight:700,fontSize:11,color:dados.ef>=MINP?"#166534":"#92400e"}},dados.ef>=MINP?"✅ GPFI HABILITADO":"⚠️ GPFI NÃO HABILITADO")
       ),
+      h("div",{style:{padding:"10px 12px",fontSize:10,color:"#444",lineHeight:1.5,borderBottom:"1px solid #aaa"}},"Declaro, sob as penas da lei, que é de minha inteira responsabilidade a veracidade das informações prestadas."),
       h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"18px 12px",gap:16}},
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Ciente — "+sel.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+sel.mat))),
         h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Superior Imediato"))
@@ -1084,7 +1508,12 @@ function HistTrf({user,trfs,comps,myCols}){
             h("td",{title:t.obs||"",style:{fontSize:11,whiteSpace:"pre-line"}},t.obs||"—")
           );})
         )
-      )))
+      ))),
+      mine.length>0&&h("div",{style:{padding:"10px 12px",fontSize:10,color:"#444",lineHeight:1.5,marginTop:8,borderTop:"1px solid #aaa"}},"Declaro, sob as penas da lei, que é de minha inteira responsabilidade a veracidade das informações prestadas."),
+      mine.length>0&&h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"18px 12px",gap:16}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Ciente — "+sel.nome,h("br"),h("span",{style:{fontWeight:400}},"I.F.: "+sel.mat))),
+        h("div",{style:{textAlign:"center"}},h("div",{style:{borderTop:"1px solid #888",paddingTop:6,marginTop:36,fontWeight:700,fontSize:10}},"Superior Imediato"))
+      )
     )
   );
 }
