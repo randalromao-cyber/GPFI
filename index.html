@@ -721,16 +721,28 @@ function Val({user,trfs,setT,users,pends,notify}){
     if(tipo==="rej"&&!motivo.trim()){notify("Informe o motivo para rejeitar.","err");return;}
     const body=tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo};
     try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns,obsVal:motivo}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
-    catch{notify("Erro.","err");}
+    catch(e){notify("Erro: "+e.message,"err");}
   }
   async function acaoTodas(tipo){
     if(!psFilt.length)return;
     const motivo=obsTodas.trim();
     if(tipo==="rej"&&!motivo){notify("Informe o motivo para rejeitar em lote.","err");return;}
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
-    for(const t of psFilt){try{await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo});}catch{}}
-    setT(p=>p.map(t=>psFilt.find(x=>x.id===t.id)?{...t,status:ns}:t));
-    notify(psFilt.length+" tarefas "+(tipo==="ap"?"aprovadas":"rejeitadas")+"!",tipo==="ap"?"ok":"err");
+    const oks=[],falhas=[];
+    for(const t of psFilt){
+      try{
+        await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo});
+        oks.push(t.id);
+      }catch(e){falhas.push(t.id);}
+    }
+    setT(p=>p.map(t=>oks.includes(t.id)?{...t,status:ns}:t));
+    if(falhas.length===0){
+      notify(oks.length+" tarefas "+(tipo==="ap"?"aprovadas":"rejeitadas")+"!",tipo==="ap"?"ok":"err");
+    }else if(oks.length===0){
+      notify("Erro: nenhuma tarefa foi salva ("+falhas.length+" falha(s)). Tente novamente.","err");
+    }else{
+      notify(oks.length+" salva(s), mas "+falhas.length+" falharam — tente novamente para essas.","err");
+    }
     setObsTodas("");
   }
 
