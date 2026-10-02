@@ -715,27 +715,32 @@ function Val({user,trfs,setT,users,pends,notify}){
   const colsComPend=[...new Set(ps.map(t=>t.uid))].map(uid=>uMap[uid]).filter(Boolean);
   const psFilt=selCol==="todos"?ps:ps.filter(t=>t.uid===selCol);
 
+  // Identifica quem rejeitou (cargo + nome) junto com o motivo digitado
+  function motivoComAutor(motivo){return ROLE_LBL[user.role]+" "+user.nome+": "+motivo;}
+
   async function acao(id,tipo){
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
     const motivo=obs[id]||"";
     if(tipo==="rej"&&!motivo.trim()){notify("Informe o motivo para rejeitar.","err");return;}
-    const body=tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo};
-    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns,obsVal:motivo}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
+    const motivoFinal=tipo==="rej"?motivoComAutor(motivo):"";
+    const body=tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivoFinal};
+    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns,obsVal:motivo,motivoRej:tipo==="rej"?motivoFinal:t.motivoRej}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
     catch(e){notify("Erro: "+e.message,"err");}
   }
   async function acaoTodas(tipo){
     if(!psFilt.length)return;
     const motivo=obsTodas.trim();
     if(tipo==="rej"&&!motivo){notify("Informe o motivo para rejeitar em lote.","err");return;}
+    const motivoFinal=tipo==="rej"?motivoComAutor(motivo):"";
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
     const oks=[],falhas=[];
     for(const t of psFilt){
       try{
-        await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivo});
+        await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivoFinal});
         oks.push(t.id);
       }catch(e){falhas.push(t.id);}
     }
-    setT(p=>p.map(t=>oks.includes(t.id)?{...t,status:ns}:t));
+    setT(p=>p.map(t=>oks.includes(t.id)?{...t,status:ns,motivoRej:tipo==="rej"?motivoFinal:t.motivoRej}:t));
     if(falhas.length===0){
       notify(oks.length+" tarefas "+(tipo==="ap"?"aprovadas":"rejeitadas")+"!",tipo==="ap"?"ok":"err");
     }else if(oks.length===0){
@@ -1092,16 +1097,17 @@ function HistTrf({user,trfs,comps,myCols}){
         h("div",{style:{textAlign:"right"}},h("div",{style:{fontSize:11,color:"#64748b"}},"Total Aprovado"),h("div",{style:{fontWeight:900,fontSize:18,color:"#1d4ed8"}},tot+" pts"))
       ),
       h("div",{className:"card"},h("div",{className:"tbl-wrap"},h("table",null,
-        h("thead",null,h("tr",null,["Data","Item","Descrição","Pts","Status","Obs"].map(x=>h("th",{key:x},x)))),
+        h("thead",null,h("tr",null,["Data","Item","Descrição","Pts","Status","Obs","Rejeitado por"].map(x=>h("th",{key:x},x)))),
         h("tbody",null,
-          mine.length===0&&h("tr",null,h("td",{colSpan:6,style:{textAlign:"center",padding:16}},"Nenhuma tarefa.")),
+          mine.length===0&&h("tr",null,h("td",{colSpan:7,style:{textAlign:"center",padding:16}},"Nenhuma tarefa.")),
           mine.map(t=>{const cat=CAT.find(c=>c.id===t.cid);return h("tr",{key:t.id},
             h("td",{style:{whiteSpace:"nowrap"}},t.data),
             h("td",{style:{fontWeight:700,color:"#1d4ed8"}},cat?cat.item:"—"),
             h("td",{style:{fontSize:11}},cat?cat.desc:t.desc),
             h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
             h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-            h("td",{title:t.obs||"",style:{fontSize:11,whiteSpace:"pre-line"}},t.obs||"—")
+            h("td",{title:t.obs||"",style:{fontSize:11,whiteSpace:"pre-line"}},t.obs||"—"),
+            h("td",{title:t.motivoRej||"",style:{fontSize:11,color:"#dc2626",whiteSpace:"pre-line"}},t.status==="rej"?(t.motivoRej||"—"):"—")
           );})
         )
       ))),
