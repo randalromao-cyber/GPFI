@@ -706,6 +706,19 @@ function Trfs({user,users,trfs,setT,comp,notify,canEditStatus,myCols}){
 }
 
 // ── VALIDAÇÃO ─────────────────────────────────────────────────────────────────
+// Lê um campo de linha única da observação ("Rótulo: valor")
+function extrairCampo(obs,rotulo){
+  if(!obs)return "";
+  const m=obs.match(new RegExp(rotulo+":[ \\t]*(.*)"));
+  return m?m[1].trim():"";
+}
+// Lê a "Tarefa Executada" (pode ter várias linhas); se a obs for antiga/sem formato, devolve o texto inteiro
+function extrairTarefaExec(obs){
+  if(!obs)return "";
+  const m=obs.match(/Tarefa Executada:\s*([\s\S]*)/);
+  return m?m[1].trim():obs;
+}
+
 function Val({user,trfs,setT,users,pends,notify}){
   const[obs,setObs]=useState({});
   const[obsTodas,setObsTodas]=useState("");
@@ -715,50 +728,72 @@ function Val({user,trfs,setT,users,pends,notify}){
   const colsComPend=[...new Set(ps.map(t=>t.uid))].map(uid=>uMap[uid]).filter(Boolean);
   const psFilt=selCol==="todos"?ps:ps.filter(t=>t.uid===selCol);
 
+  // Agrupa as tarefas pendentes por fiscal + nº do processo.
+  // Tarefas antigas, sem nº de processo, ficam em um grupo próprio cada uma.
+  const grupos=[];
+  const idx={};
+  psFilt.forEach(t=>{
+    const proc=extrairProcesso(t.obs);
+    const key=t.uid+"|"+(proc?proc.toLowerCase():"sem-"+t.id);
+    if(!idx[key]){idx[key]={key,uid:t.uid,proc,tarefas:[]};grupos.push(idx[key]);}
+    idx[key].tarefas.push(t);
+  });
+  grupos.sort((a,b)=>{
+    const na=(uMap[a.uid]?.nome||""),nb=(uMap[b.uid]?.nome||"");
+    return na.localeCompare(nb)||String(a.proc||"").localeCompare(String(b.proc||""));
+  });
+
   // Identifica quem rejeitou (cargo + nome) junto com o motivo digitado
   function motivoComAutor(motivo){return ROLE_LBL[user.role]+" "+user.nome+": "+motivo;}
 
-  async function acao(id,tipo){
+  // Aprova/rejeita uma ou várias tarefas; só atualiza a tela para o que realmente foi salvo no banco
+  async function aplicar(ids,tipo,motivo){
+    const mot=(motivo||"").trim();
+    if(tipo==="rej"&&!mot){notify("Informe o motivo para rejeitar.","err");return false;}
     const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
-    const motivo=obs[id]||"";
-    if(tipo==="rej"&&!motivo.trim()){notify("Informe o motivo para rejeitar.","err");return;}
-    const motivoFinal=tipo==="rej"?motivoComAutor(motivo):"";
-    const body=tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivoFinal};
-    try{await sb("PATCH","tarefas","id=eq."+id,body);setT(p=>p.map(t=>t.id!==id?t:{...t,status:ns,obsVal:motivo,motivoRej:tipo==="rej"?motivoFinal:t.motivoRej}));notify(tipo==="ap"?"Aprovado!":"Rejeitado.",tipo==="ap"?"ok":"err");}
-    catch(e){notify("Erro: "+e.message,"err");}
-  }
-  async function acaoTodas(tipo){
-    if(!psFilt.length)return;
-    const motivo=obsTodas.trim();
-    if(tipo==="rej"&&!motivo){notify("Informe o motivo para rejeitar em lote.","err");return;}
-    const motivoFinal=tipo==="rej"?motivoComAutor(motivo):"";
-    const ns=tipo==="ap"?(user.role==="encarregado"?"ap_enc":"ap_ger"):"rej";
+    const motivoFinal=tipo==="rej"?motivoComAutor(mot):"";
     const oks=[],falhas=[];
-    for(const t of psFilt){
+    let ultimoErro="";
+    for(const id of ids){
       try{
-        await sb("PATCH","tarefas","id=eq."+t.id,tipo==="ap"?{status:ns,obs_val:motivo||null}:{status:"rej",motivo_rej:motivoFinal});
-        oks.push(t.id);
-      }catch(e){falhas.push(t.id);}
+        await sb("PATCH","tarefas","id=eq."+id,tipo==="ap"?{status:ns,obs_val:mot||null}:{status:"rej",motivo_rej:motivoFinal});
+        oks.push(id);
+      }catch(e){falhas.push(id);ultimoErro=e.message;}
     }
-    setT(p=>p.map(t=>oks.includes(t.id)?{...t,status:ns,motivoRej:tipo==="rej"?motivoFinal:t.motivoRej}:t));
+    setT(p=>p.map(t=>oks.includes(t.id)?{...t,status:ns,obsVal:tipo==="ap"?mot:t.obsVal,motivoRej:tipo==="rej"?motivoFinal:t.motivoRej}:t));
     if(falhas.length===0){
-      notify(oks.length+" tarefas "+(tipo==="ap"?"aprovadas":"rejeitadas")+"!",tipo==="ap"?"ok":"err");
+      notify(oks.length+" tarefa(s) "+(tipo==="ap"?"aprovada(s)":"rejeitada(s)")+"!",tipo==="ap"?"ok":"err");
     }else if(oks.length===0){
-      notify("Erro: nenhuma tarefa foi salva ("+falhas.length+" falha(s)). Tente novamente.","err");
+      notify("Erro: nenhuma tarefa foi salva. "+ultimoErro,"err");
     }else{
       notify(oks.length+" salva(s), mas "+falhas.length+" falharam — tente novamente para essas.","err");
     }
-    setObsTodas("");
+    return falhas.length===0;
+  }
+  async function aplicarGrupo(g,tipo){
+    const ok=await aplicar(g.tarefas.map(t=>t.id),tipo,obs[g.key]||"");
+    if(ok)setObs(p=>({...p,[g.key]:""}));
+  }
+  async function aplicarTarefa(g,t,tipo){
+    const ok=await aplicar([t.id],tipo,obs[g.key]||"");
+    if(ok)setObs(p=>({...p,[g.key]:""}));
+  }
+  async function aplicarTodos(tipo){
+    if(!psFilt.length)return;
+    const ok=await aplicar(psFilt.map(t=>t.id),tipo,obsTodas);
+    if(ok)setObsTodas("");
   }
 
+  const Info=(lbl,val)=>h("div",null,h("label",{className:"lbl"},lbl),h("div",{style:{fontSize:13,fontWeight:600,wordBreak:"break-word"}},val||"—"));
+
   return h("div",null,
-    h("h2",{className:"ph"},"Validação de Tarefas"),
+    h("h2",{className:"ph"},"Validação por Processo"),
     h("div",{className:"card",style:{padding:"12px 16px",marginBottom:12}},
       h("div",{style:{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}},
         h("div",{style:{flex:1,minWidth:200}},
           h("label",{className:"lbl"},"Filtrar por Colaborador"),
           h("select",{value:selCol,onChange:e=>setSelCol(e.target.value)},
-            h("option",{value:"todos"},"Todos — "+ps.length+" pendente(s)"),
+            h("option",{value:"todos"},"Todos — "+ps.length+" tarefa(s) pendente(s)"),
             colsComPend.map(u=>h("option",{key:u.id,value:u.id},u.nome+" ("+ps.filter(t=>t.uid===u.id).length+")"))
           )
         ),
@@ -768,35 +803,60 @@ function Val({user,trfs,setT,users,pends,notify}){
             h("input",{placeholder:"Informe o motivo (obrigatório ao rejeitar)...",value:obsTodas,onChange:e=>setObsTodas(e.target.value)})
           ),
           h("div",{style:{display:"flex",gap:8,marginTop:6}},
-            h("button",{className:"btn",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("ap")},"✓ Aprovar Todas"),
-            h("button",{className:"btnd",style:{fontSize:12,padding:"8px 14px"},onClick:()=>acaoTodas("rej")},"✗ Rejeitar Todas")
+            h("button",{className:"btn",style:{fontSize:12,padding:"8px 14px"},onClick:()=>aplicarTodos("ap")},"✓ Aprovar Todos os Processos"),
+            h("button",{className:"btnd",style:{fontSize:12,padding:"8px 14px"},onClick:()=>aplicarTodos("rej")},"✗ Rejeitar Todos")
           )
         )
       )
     ),
-    psFilt.length===0&&h("div",{className:"card",style:{padding:20,textAlign:"center"}},"✅ Nenhuma pendência."),
-    psFilt.map(t=>{const col=uMap[t.uid],cat=CAT.find(c=>c.id===t.cid);return h("div",{key:t.id,className:"card",style:{padding:14,marginBottom:10}},
-      h("div",{style:{marginBottom:6}},
-        h("span",{style:{fontWeight:900,color:"#1d4ed8",fontSize:13,marginRight:8}},"Item "+(cat?cat.item:"—")),
-        h("span",{style:{fontWeight:600,fontSize:13}},cat?cat.desc:t.desc)
-      ),
-      h("div",{style:{fontSize:12,marginBottom:8}},h("b",null,col?col.nome:"—")," • "+t.data+" • ",h("b",{style:{color:"#1d4ed8"}},t.pts+" pts")," • ",h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
-      // obs do auditor (dados do processo), formatada de forma legível
-      t.obs&&h("div",{style:{fontSize:11,padding:"8px 10px",borderRadius:6,border:"1px solid #e2e8f0",marginBottom:8,whiteSpace:"pre-line",lineHeight:1.6}},"📝 "+t.obs),
-      // campo motivo obrigatório
-      h("div",{className:"field"},
-        h("label",{className:"lbl"},"Motivo ",h("span",{style:{color:"#94a3b8",fontWeight:400}},"(obrigatório para rejeitar)")),
-        h("input",{
-          placeholder:"Informe o motivo (obrigatório ao rejeitar)...",
-          value:obs[t.id]||"",
-          onChange:e=>setObs(p=>({...p,[t.id]:e.target.value})),
-        })
-      ),
-      h("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
-        h("button",{className:"btn",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"ap")},"✓ Aprovar"),
-        h("button",{className:"btnd",style:{fontSize:12,padding:"7px 14px"},onClick:()=>acao(t.id,"rej")},"✗ Rejeitar")
-      )
-    );})
+    grupos.length===0&&h("div",{className:"card",style:{padding:20,textAlign:"center"}},"✅ Nenhuma pendência."),
+    grupos.map(g=>{
+      const col=uMap[g.uid];
+      const campo=(rot)=>g.tarefas.map(t=>extrairCampo(t.obs,rot)).find(Boolean)||"";
+      const classF=campo("Classificação Fiscal"),interessado=campo("Interessado"),assunto=campo("Assunto do Processo");
+      const totalPts=g.tarefas.reduce((s,t)=>s+t.pts,0);
+      const mot=obs[g.key]||"";
+      return h("div",{key:g.key,className:"card",style:{marginBottom:14}},
+        h("div",{className:"card-head",style:{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}},
+          h("span",null,"📁 Processo "+(g.proc||"(sem nº informado)")),
+          h("span",{style:{fontSize:12,fontWeight:600}},(col?col.nome:"—")+" • "+g.tarefas.length+" tarefa(s) • "+totalPts+" pts")
+        ),
+        h("div",{style:{padding:14}},
+          h("div",{className:"g3",style:{marginBottom:12}},
+            Info("Classificação Fiscal",classF),
+            Info("Interessado",interessado),
+            Info("Assunto do Processo",assunto)
+          ),
+          h("div",{className:"tbl-wrap"},h("table",null,
+            h("thead",null,h("tr",null,["Data","Item","Descrição","Tarefa Executada","Qtd","Pts","Status",""].map(x=>h("th",{key:x},x)))),
+            h("tbody",null,
+              g.tarefas.map(t=>{const cat=CAT.find(c=>c.id===t.cid);return h("tr",{key:t.id},
+                h("td",{style:{whiteSpace:"nowrap"}},t.data),
+                h("td",{style:{fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}},cat?cat.item:"—"),
+                h("td",{style:{fontSize:11,maxWidth:240}},cat?cat.desc:t.desc),
+                h("td",{style:{fontSize:11,maxWidth:260,whiteSpace:"pre-line"}},extrairTarefaExec(t.obs)||"—"),
+                h("td",{style:{textAlign:"center"}},t.qtd||1),
+                h("td",{style:{fontWeight:700,color:t.pts<0?"#dc2626":"#1d4ed8"}},t.pts),
+                h("td",null,h(Bdg,{lbl:SLBL[t.status],cor:SCOR[t.status]})),
+                h("td",null,h("div",{style:{display:"flex",gap:4}},
+                  h("button",{className:"btns",title:"Aprovar somente esta tarefa",style:{padding:"3px 8px",fontSize:11,color:"#16a34a"},onClick:()=>aplicarTarefa(g,t,"ap")},"✓"),
+                  h("button",{className:"btns",title:"Rejeitar somente esta tarefa (exige motivo)",style:{padding:"3px 8px",fontSize:11,color:"#dc2626"},onClick:()=>aplicarTarefa(g,t,"rej")},"✗")
+                ))
+              );})
+            ),
+            h("tfoot",null,h("tr",{style:{fontWeight:900,background:"#f8fafc"}},h("td",{colSpan:5,style:{textAlign:"right"}},"TOTAL DO PROCESSO:"),h("td",{style:{color:totalPts<0?"#dc2626":"#16a34a"}},totalPts+" pts"),h("td",null),h("td",null)))
+          )),
+          h("div",{className:"field",style:{marginTop:12}},
+            h("label",{className:"lbl"},"Motivo / Observação ",h("span",{style:{color:"#94a3b8",fontWeight:400}},"(obrigatório para rejeitar)")),
+            h("input",{placeholder:"Informe o motivo (obrigatório ao rejeitar)...",value:mot,onChange:e=>setObs(p=>({...p,[g.key]:e.target.value}))})
+          ),
+          h("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+            h("button",{className:"btn",style:{fontSize:12,padding:"8px 14px"},onClick:()=>aplicarGrupo(g,"ap")},"✓ Aprovar Processo ("+g.tarefas.length+" tarefa(s) — "+totalPts+" pts)"),
+            h("button",{className:"btnd",style:{fontSize:12,padding:"8px 14px"},onClick:()=>aplicarGrupo(g,"rej")},"✗ Rejeitar Processo")
+          )
+        )
+      );
+    })
   );
 }
 
@@ -930,11 +990,38 @@ function MapaGer({users,comp,getR,mediaAptos,myCols}){
 }
 
 // ── RELATÓRIOS ────────────────────────────────────────────────────────────────
-function Rel({comp,comps,getR,mediaAptos,myCols}){
+// Extrai o número do processo a partir do texto de observação ("Nº Processo: ...")
+function extrairProcesso(obs){
+  if(!obs)return null;
+  const m=obs.match(/Nº Processo:\s*(.+)/);
+  const v=m?m[1].trim():null;
+  return v||null;
+}
+
+function Rel({comp,comps,getR,mediaAptos,myCols,trfs}){
   const all=[comp,...Object.keys(comps).filter(c=>c!==comp)].sort().reverse();
   const[cS,setCS]=useState(comp);
   const cs=myCols(),mef=mediaAptos(cS);
   const aptos=cs.filter(u=>getR(u.id,cS).ef>=MINP).length;
+
+  // Relatório de processos por fiscal (competência selecionada)
+  const procPorFiscal=cs.map(u=>{
+    const dele=trfs.filter(t=>t.uid===u.id&&t.comp===cS);
+    const processos=new Set(dele.map(t=>extrairProcesso(t.obs)).filter(Boolean));
+    return{u,qtdProc:processos.size,qtdTarefas:dele.length};
+  }).sort((a,b)=>b.qtdProc-a.qtdProc);
+  const totalProc=procPorFiscal.reduce((s,x)=>s+x.qtdProc,0);
+
+  function exportarCSV(){
+    const linhas=[["Auditor","I.F.","Unidade","Qtd. Processos","Qtd. Tarefas"]];
+    procPorFiscal.forEach(({u,qtdProc,qtdTarefas})=>linhas.push([u.nome,u.mat,u.unid,qtdProc,qtdTarefas]));
+    const csv=linhas.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(";")).join("\n");
+    const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="processos_por_fiscal_"+cS+".csv";a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return h("div",null,
     h("div",{style:{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:14}},
       h("h2",{className:"ph",style:{margin:0}},"Relatórios"),
@@ -949,6 +1036,23 @@ function Rel({comp,comps,getR,mediaAptos,myCols}){
           h("td",{style:{fontWeight:700,color:r.ef>=MINP?"#16a34a":"#d97706"}},r.ef),h("td",null,r.exc),h("td",null,fmtBRL(gpfi(r.ef,u.vb))),
           h("td",null,h(Bdg,{lbl:r.ef>=MINP?"Apto":"Abaixo",cor:r.ef>=MINP?"#16a34a":"#f59e0b"}))
         );}))
+      ))
+    ),
+    h("div",{className:"card"},
+      h("div",{className:"card-head",style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        "Processos por Fiscal — "+fmtComp(cS)+" (total: "+totalProc+")",
+        h("button",{className:"btns",style:{fontSize:11,padding:"5px 10px"},onClick:exportarCSV},"⬇️ Exportar CSV")
+      ),
+      h("div",{style:{padding:"6px 16px",fontSize:11,color:"#94a3b8"}},"Contagem de processos distintos (campo \"Nº Processo\") lançados por cada auditor, somando tarefas de qualquer status."),
+      h("div",{className:"tbl-wrap"},h("table",null,
+        h("thead",null,h("tr",null,["#","Auditor","I.F.","Unid.","Qtd. Processos","Qtd. Tarefas"].map(x=>h("th",{key:x},x)))),
+        h("tbody",null,
+          procPorFiscal.length===0&&h("tr",null,h("td",{colSpan:6,style:{textAlign:"center",padding:16}},"Nenhum lançamento nesta competência.")),
+          procPorFiscal.map(({u,qtdProc,qtdTarefas},i)=>h("tr",{key:u.id},
+            h("td",null,i+1),h("td",{style:{fontWeight:600}},u.nome),h("td",null,u.mat),h("td",null,h(Bdg,{lbl:u.unid,cor:UNID_COR[u.unid]||"#64748b"})),
+            h("td",{style:{fontWeight:700,color:"#1d4ed8"}},qtdProc),h("td",null,qtdTarefas)
+          ))
+        )
       ))
     )
   );
